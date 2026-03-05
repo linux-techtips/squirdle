@@ -9,6 +9,7 @@
     "start": "NODE_ENV=production bun src/index.ts"
   },
   "dependencies": {
+    "@picocss/pico": "^2.1.1",
     "react": "^19",
     "react-dom": "^19"
   },

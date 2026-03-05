@@ -3,6 +3,8 @@ import { StrictMode } from "react";
 
 import { Counter } from "./Counter";
 
+import "@picocss/pico";
+
 const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
