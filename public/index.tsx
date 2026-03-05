@@ -5,7 +5,6 @@ import { Counter } from "./Counter";
 
 import "@picocss/pico";
 
-const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
     <main>
@@ -15,8 +14,8 @@ const app = (
 );
 
 if (import.meta.hot) {
-  const root = (import.meta.hot.data.root ??= createRoot(elem));
+  const root = (import.meta.hot.data.root ??= createRoot(document.body));
   root.render(app);
 } else {
-  createRoot(elem).render(app);
+  createRoot(document.body).render(app);
 }
