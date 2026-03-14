@@ -1,0 +1,8 @@
+img.poke-sprite {
+  width: 96px;
+  height: 96px;
+  background-image: url("static/spritesheet.png");
+  background-repeat: no-repeat;
+  background-position: calc(var(--x) * -96px) calc(var(--y) * -96px);
+  image-rendering: pixelated;
+}
