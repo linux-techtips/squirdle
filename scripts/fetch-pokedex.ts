@@ -30,7 +30,7 @@ function parse_pokemon(json: any): Pokemon {
   };
 }
 
-async function fetch_pokedex(batch_size: number, sleep_ms: number): Promise<Pokemon[]> {
+export async function fetch_pokedex(save_path: string, batch_size: number, sleep_ms: number) {
   const pokedex: Pokemon[] = [];
 
   for (let i = 1; i <= 649; i += batch_size) {
@@ -56,18 +56,13 @@ async function fetch_pokedex(batch_size: number, sleep_ms: number): Promise<Poke
     }
   }
 
-  return pokedex;
-}
-
-export async function build_pokedex(save_path: string, batch_size: number, sleep_ms: number) {
-  const pokedex = await fetch_pokedex(batch_size, sleep_ms);
   await Bun.write(save_path, JSON.stringify(pokedex, null, 2));
 }
 
 async function main() {
   // TODO: (Carter) command line args.
   const save_path = path.join(import.meta.dir, "pokedex.json");
-  await build_pokedex(save_path, 5, 100);
+  await fetch_pokedex(save_path, 5, 100);
 }
 
 if (import.meta.main) main();
