@@ -1,15 +1,13 @@
 import { createRoot } from "react-dom/client";
 import { StrictMode } from "react";
 
-import { Counter } from "./Counter";
+import App from "./App";
 
 import "@picocss/pico";
 
 const app = (
   <StrictMode>
-    <main>
-      <Counter />
-    </main>
+    <App />
   </StrictMode>
 );
 
