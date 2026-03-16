@@ -16,7 +16,6 @@ function serve(hostname: string) {
 
 async function main() {
   const [hostname = "localhost"] = Bun.argv.slice(2);
-
   const server = serve(hostname);
 
   console.info(`[server] started at: ${server.url}`);
