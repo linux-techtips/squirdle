@@ -1,24 +1,93 @@
+// TODO: (Carter) this will include the pokedex json in the js bundle.
+import pokedex from "@/public/static/pokedex.json";
+
 import "./index.css";
 
-import { Sprite } from "./Sprite.tsx";
+const TOTAL_POKEMON = 649;
+const COLS = Math.ceil(Math.sqrt(TOTAL_POKEMON));
 
-function SpriteSheet() {
-  const ids = Array.from({ length: 649 }, (_, i) => i + 1);
+type PokemonType =
+  | "normal"
+  | "fighting"
+  | "flying"
+  | "poison"
+  | "ground"
+  | "rock"
+  | "bug"
+  | "ghost"
+  | "steel"
+  | "stellar"
+  | "fire"
+  | "water"
+  | "grass"
+  | "electric"
+  | "psychic"
+  | "ice"
+  | "dragon"
+  | "dark"
+  | "fairy"
+
+type Pokemon = {
+  generation: number,
+  height: number,
+  weight: number,
+  type1: PokemonType,
+  type2: PokemonType | null,
+  name: string,
+};
+
+export function Sprite({ id }: { id: number }) {
+  return (
+    <img
+      className="poke-sprite"
+      style={{
+        "--x": id % COLS,
+        "--y": Math.floor(id / COLS),
+      }}
+    />
+  );
+}
+
+function Pokedex() {
+  const ids = Array.from({ length: 649 }, (_, i) => i);
 
   return (
-    <div>
-      {ids.map((id) => (
+    <table>
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Generation</th>
+          <th>Height</th>
+          <th>Weight</th>
+          <th>Type</th>
+        </tr>
+      </thead>
+      <tbody>
+        {ids.map(id => PokedexEntry({ id }))}
+      </tbody>
+    </table>
+  );
+}
+
+function PokedexEntry({ id }: { id: number }) {
+  const pokemon = pokedex[id]! as Pokemon;
+  return (
+    <tr>
+      <th scope="row" key={id}>
         <Sprite id={id} />
-      ))}
-    </div>
+      </th>
+      <td>{pokemon.generation}</td>
+      <td>{pokemon.height / 10}m</td>
+      <td>{pokemon.weight / 10}kg</td>
+      <td>{pokemon.type1} {pokemon.type2}</td>
+    </tr>
   );
 }
 
 export default function () {
   return (
     <main>
-      <h1>Spritesheet Test</h1>
-      <SpriteSheet />
+      <Pokedex />
     </main>
   );
 }

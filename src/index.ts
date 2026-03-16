@@ -1,14 +1,25 @@
 import index from "@/public/index.html";
 
-const server = Bun.serve({
-  routes: {
-    "/*": index,
-  },
+function serve(hostname: string) {
+  return Bun.serve({
+    routes: {
+      "/*": index,
+    },
 
-  development: process.env.NODE_ENV !== "production" && {
-    hmr: true,
-    console: true,
-  },
-});
+    development: process.env.NODE_ENV !== "production" && {
+      hmr: true,
+      console: true,
+    },
+    hostname,
+  });
+}
 
-console.info(`[server] started at: ${server.hostname}:${server.port}`);
+async function main() {
+  const [hostname = "localhost"] = Bun.argv.slice(2);
+
+  const server = serve(hostname);
+
+  console.info(`[server] started at: ${server.url}`);
+}
+
+if (import.meta.main) main();
