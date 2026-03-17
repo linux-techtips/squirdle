@@ -27,3 +27,17 @@ export type Pokemon = {
   type2: PokemonType | null,
   name: string,
 };
+
+export type Comparison = {
+  generation: "gt" | "lt" | "eq",
+  height: "gt" | "lt" | "eq",
+  weight: "gt" | "lt" | "eq",
+  type1: "eq" | "ne",
+  type2: "eq" | "ne",
+}
+
+export type Guess = {
+  correct: boolean,
+  guesses: number,
+  comparison: Comparison,
+};
