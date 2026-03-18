@@ -11,7 +11,7 @@ async function main() {
 
   squirdle.db.run(`
     INSERT INTO players (id, name) VALUES (1, 'crapper');
-    INSERT INTO players_games (player_id, pokemon_id) VALUES (1, 1);
+    INSERT INTO players_games (player_id, pokemon_id, max_guesses) VALUES (1, 1, 8);
   `);
 }
 

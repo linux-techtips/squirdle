@@ -41,3 +41,10 @@ export type Guess = {
   guesses: number,
   comparison: Comparison,
 };
+
+export type GameState =
+  | { status: "playing", guesses: Guess[] }
+  | { status: "won", guesses: Guess[] }
+  | { status: "lost", guesses: Guess[], answer: string };
+
+export type Status = "won" | "lost" | "playing";
