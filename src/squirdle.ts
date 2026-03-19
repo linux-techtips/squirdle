@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 
-import type { Comparison, Guess, Pokemon, Status } from "@/types";
+import type { Comparison, Pokemon, Status } from "@/types";
 
 export const db = Database.open(Bun.env.DATABASE_URL!, { strict: true, create: true });
 
