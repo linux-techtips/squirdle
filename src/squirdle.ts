@@ -1,231 +1,247 @@
-import { Database } from "bun:sqlite";
+import type { Database } from "bun:sqlite";
 
-import type { Comparison, Pokemon, Status } from "@/types";
+import * as util from "./util";
 
-export const db = Database.open(Bun.env.DATABASE_URL!, { strict: true, create: true });
+export const POKEMON_TYPES = [
+  "normal", "fire", "water", "electric", "grass", "ice",
+  "fighting", "poison", "ground", "flying", "psychic", "bug",
+  "rock", "ghost", "dragon", "dark", "steel", "fairy",
+] as const;
 
-export function create_schema(db: Database) {
+export type PokemonType = typeof POKEMON_TYPES[number];
+
+export type Pokemon = {
+  name: string,
+  generation: number,
+  height: number,
+  weight: number,
+  type1: PokemonType,
+  type2: PokemonType | null;
+};
+
+export type GameStatus = "playing" | "won" | "lost";
+
+export type GameSummary = {
+  status: GameStatus,
+  masks: Uint8Array,
+  answer_id: number | null,
+};
+
+export type GuessResult = {
+  mask: number,
+  status: GameStatus,
+  answer_id: number | null,
+};
+
+export function migrate(db: Database) {
+  const poke_type_check = POKEMON_TYPES.map(t => `'${t}'`).join(',');
+
   db.run(`
-    CREATE TABLE IF NOT EXISTS pokemon (
+    PRAGMA foreign_keys = ON;
+
+    CREATE TABLE pokemon (
       id INTEGER PRIMARY KEY,
       name TEXT NOT NULL UNIQUE,
-      generation INTEGER NOT NULL,
       height INTEGER NOT NULL,
       weight INTEGER NOT NULL,
-      type1 TEXT NOT NULL,
-      type2 TEXT
+      generation INTEGER NOT NULL,
+      type1 TEXT NOT NULL CHECK (type1 IN (${poke_type_check})),
+      type2 TEXT CHECK (type2 IN (${poke_type_check}))
     ) STRICT;
 
-    CREATE TABLE IF NOT EXISTS pokemon_daily (
+    CREATE TABLE games (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pokemon_id INTEGER NOT NULL REFERENCES pokemon(id),
+      max_guess_count INTEGER NOT NULL DEFAULT 6 CHECK (max_guess_count > 0)
+    ) STRICT;
+
+    CREATE TABLE guesses (
+      game_id INTEGER NOT NULL REFERENCES games(id),
+      pokemon_id INTEGER NOT NULL REFERENCES pokemon(id),
+      guessed_at INTEGER NOT NULL DEFAULT (UNIXEPOCH()),
+      UNIQUE(game_id, pokemon_id)
+    ) STRICT;
+
+    CREATE TABLE pokemon_schedule (
       scheduled_at INTEGER PRIMARY KEY CHECK(scheduled_at % 86400 = 0),
       pokemon_id INTEGER NOT NULL REFERENCES pokemon(id)
     ) STRICT;
 
-    CREATE TABLE IF NOT EXISTS players (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL
-    ) STRICT;
+    CREATE VIEW pokemon_today AS
+    SELECT pokemon_id FROM pokemon_schedule WHERE scheduled_at = ((UNIXEPOCH() / 86400) * 86400);
 
-    CREATE TABLE IF NOT EXISTS players_games_guesses (
-      game_id INTEGER NOT NULL REFERENCES players_games(id),
-      guessed_pokemon_id INTEGER NOT NULL REFERENCES pokemon(id),
-      created_at INTEGER NOT NULL DEFAULT (UNIXEPOCH())
-    ) STRICT;
-
-    CREATE TABLE IF NOT EXISTS players_games (
-      player_id INTEGER PRIMARY KEY REFERENCES players(id),
-      pokemon_id INTEGER NOT NULL REFERENCES pokemon(id),
-      max_guesses INTEGER NOT NULL,
-      initiated_at INTEGER NOT NULL DEFAULT (UNIXEPOCH())
-    ) STRICT;
-
-    CREATE VIEW IF NOT EXISTS pokemon_today AS
-    SELECT pokemon_id FROM pokemon_daily WHERE scheduled_at = ((UNIXEPOCH() / 86400) * 86400);
-
-    CREATE VIEW IF NOT EXISTS pokemon_comparison AS
+    CREATE VIEW pokemon_comparison AS
     SELECT
-      src.id as pokemon_src_id,
-      tgt.id as pokemon_tgt_id,
+      src.id AS src_pokemon_id,
+      tgt.id AS tgt_pokemon_id,
+      (
+        CASE
+          WHEN src.generation > tgt.generation THEN 128
+          WHEN src.generation < tgt.generation THEN 64
+          ELSE 0
+        END
+        |
+        CASE
+          WHEN src.height > tgt.height THEN 32
+          WHEN src.height < tgt.height THEN 16
+          ELSE 0
+        END
+        |
+        CASE
+          WHEN src.weight > tgt.weight THEN 8
+          WHEN src.weight < tgt.weight THEN 4
+          ELSE 0
+        END
+        |
+        CASE
+          WHEN src.type1 != tgt.type1 THEN 2
+          ELSE 0
+        END
+        |
+        CASE
+          WHEN src.type2 IS NOT tgt.type2 THEN 1
+          ELSE 0
+        END
+      ) AS mask
+    FROM pokemon AS src
+    JOIN pokemon AS tgt;
+
+    CREATE VIEW game_state AS
+    SELECT
+      ga.id AS game_id,
+      ga.pokemon_id,
+      ga.max_guess_count,
+      COUNT(gu.pokemon_id) AS guess_count,
       CASE
-        WHEN src.generation < tgt.generation THEN 'lt'
-        WHEN src.generation > tgt.generation THEN 'gt'
-        ELSE 'eq'
-      END as generation,
-      CASE
-        WHEN src.height < tgt.height THEN 'lt'
-        WHEN src.height > tgt.height THEN 'gt'
-        ELSE 'eq'
-      END as height,
-      CASE
-        WHEN src.weight < tgt.weight THEN 'lt'
-        WHEN src.weight > tgt.weight THEN 'gt'
-        ELSE 'eq'
-      END as weight,
-      CASE WHEN src.type1 = tgt.type1 THEN 'eq' ELSE 'ne' END as type1,
-      CASE WHEN src.type2 = tgt.type2 THEN 'eq' ELSE 'ne' END as type2
-    FROM pokemon src
-    JOIN pokemon tgt;
+        WHEN MAX(CASE WHEN gu.pokemon_id = ga.pokemon_id THEN 1 ELSE 0 END) = 1 THEN "won"
+        WHEN COUNT(gu.pokemon_id) >= ga.max_guess_count THEN "lost"
+        ELSE "playing"
+      END as status
+    FROM games AS ga
+    LEFT JOIN guesses AS gu ON gu.game_id = ga.id
+    GROUP BY ga.id;
+
+    CREATE VIEW guess_result AS
+    SELECT
+      gu.game_id,
+      gu.pokemon_id,
+      gu.guessed_at,
+      pc.mask,
+      gs.status,
+      CASE WHEN gs.status != "playing" THEN gs.pokemon_id ELSE NULL END AS answer_id
+    FROM guesses AS gu
+    JOIN game_state AS gs ON gs.game_id = gu.game_id
+    JOIN pokemon_comparison AS pc ON
+      pc.src_pokemon_id = gu.pokemon_id AND
+      pc.tgt_pokemon_id = gs.pokemon_id;
+
+    CREATE VIEW game_summary AS
+    SELECT
+      gs.game_id,
+      gs.status,
+      gs.guess_count,
+      gs.max_guess_count,
+      CASE WHEN gs.status != 'playing' THEN gs.pokemon_Id ELSE NULL END AS answer_id,
+      GROUP_CONCAT(printf('%02x', pc.mask), '') AS masks
+    FROM game_state AS gs
+    JOIN guesses AS gu ON gu.game_id = gs.game_id
+    JOIN pokemon_comparison AS pc ON
+      pc.src_pokemon_id = gu.pokemon_id AND
+      pc.tgt_pokemon_id = gs.pokemon_id
+    GROUP BY gs.game_id
+    ORDER BY gu.guessed_at;
   `);
 }
 
-export function seed_pokedex(db: Database, pokedex: Pokemon[]) {
-  const insert = db.query(`
-    INSERT INTO pokemon (id, name, type1, type2, height, weight, generation)
-    VALUES ($id, $name, $type1, $type2, $height, $weight, $generation)
-  `);
+export function seed(
+  db: Database,
+  pokedex: Pokemon[],
+  ids: number[],
+  date_offset: number = 0,
+) {
+  const seed = db.transaction(() => {
+    const insert = db.query<{}, Pokemon & { id: number }>(`
+      INSERT INTO pokemon (id, name, generation, height, weight, type1, type2)
+      VALUES (:id, :name, :generation, :height, :weight, :type1, :type2)
+    `);
 
-  const bulkInsert = db.transaction(() => {
-    for (const [i, poke] of pokedex.entries()) {
-      insert.run({ id: i + 1, ...poke });
+    const schedule = db.query<{}, { date: number, id: number }>(`
+      INSERT INTO pokemon_schedule (scheduled_at, pokemon_id)
+      VALUES ($date, $id)
+    `);
+
+    for (let i = 0; i < pokedex.length; i += 1) {
+      insert.run({ id: i + 1, ...pokedex[i]! });
     }
-  });
 
-  return bulkInsert();
-}
-
-function today() {
-  // NOTE: we should probably pass Date.now as an argument.
-  return Math.floor(Math.floor(Date.now() / 1000) / 86400) * 86400;
-}
-
-export function schedule_pokemon(db: Database, ids: number[], date_offset: number = 0) {
-  const date = today();
-
-  const scheduleAll = db.transaction(() => {
-    const schedule = db.query(`INSERT INTO pokemon_daily (scheduled_at, pokemon_id) VALUES ($date, $id)`);
+    const today = util.today();
 
     let i = 0;
     for (const id of ids) {
-      schedule.run({ date: date + ((i + date_offset) * 86400), id });
+      schedule.run({ date: today + ((i + date_offset) * 86400), id });
       i += 1;
     }
+
+    schedule.finalize();
+    insert.finalize();
   });
 
-  return scheduleAll();
+  return seed();
 }
 
-// https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
-export function sample_ids(count: number): number[] {
-  const POOL_SIZE = 650;
+export function start_game(db: Database): number {
+  const start = db.query<{ id: number }, {}>(`
+    INSERT INTO games (pokemon_id)
+    SELECT pokemon_id FROM pokemon_today
+    RETURNING id
+  `);
 
-  const ids = Array.from({ length: POOL_SIZE }, (_, i) => i);
-  const result = new Array<number>(count);
+  return start.get({})!.id;
+}
 
-  let filled = 0;
-  while (filled < count) {
-    const take = Math.min(count - filled, POOL_SIZE);
-    for (let i = 0; i < count; i += 1) {
-      // NOTE: we probably should pass rng as an argument
-      const j = i + Math.floor(Math.random() * (POOL_SIZE - i));
-      [ids[i], ids[j]] = [ids[j]!, ids[i]!];
-      result[filled + i] = ids[i]!;
-    }
+export function guess(db: Database, game_id: number, pokemon_id: number): GuessResult | null {
+  const row = db.query<{ rowid: number }, { game_id: number, pokemon_id: number }>(`
+    INSERT INTO guesses (game_id, pokemon_id)
+    VALUES (:game_id, :pokemon_id)
+    RETURNING rowid
+  `).get({ game_id, pokemon_id });
 
-    filled += take;
-  }
+  if (!row) throw new Error("failed to make guess");
+
+  const result = db.query<GuessResult, { rowid: number }>(`
+    SELECT gr.* FROM guess_result AS gr
+    JOIN guesses gu ON gu.game_id = gr.game_id AND gu.pokemon_id = gr.pokemon_id
+    WHERE gu.rowid = :rowid
+  `).get({ rowid: row.rowid });
 
   return result;
 }
 
-export function create_player(name: string): number | null {
-  return db.query<{ id: number }, { name: string }>(`INSERT INTO players (name) VALUES ($name) RETURNING id`).get({ name })?.id ?? null;
+export function game_summary(db: Database, game_id: number): GameSummary | null {
+  const result = db.query<Omit<GameSummary, "masks"> & { masks: string }, { game_id: number }>(`
+    SELECT * FROM game_summary WHERE game_id = :game_id
+  `).get({ game_id });
+
+  if (result === null) return null;
+
+  return { ...result, masks: Uint8Array.fromHex(result.masks) };
 }
 
-export function start_game(player_id: number, pokemon_id: number | null = null, max_guesses: number = 8): number {
-  db.transaction(() => {
-    const { changes } = db.query(`
-      INSERT INTO players_games (player_id, pokemon_id, max_guesses, initiated_at)
-        SELECT $player_id, COALESCE($pokemon_id, pokemon_id), $max_guesses, UNIXEPOCH() FROM pokemon_today
-        UNION ALL
-        SELECT $player_id, $pokemon_id, $max_guesses, UNIXEPOCH() WHERE $pokemon_id IS NOT NULL LIMIT 1
-      ON CONFLICT (player_id) DO UPDATE SET
-        pokemon_id = EXCLUDED.pokemon_id,
-        max_guesses = EXCLUDED.max_guesses,
-        initiated_at = EXCLUDED.initiated_at
-      `).run({ player_id, pokemon_id, max_guesses });
+export type Cmp = "gt" | "lt" | "eq";
+export type Eq = "eq" | "ne";
 
-    // TODO: (Carter) proper error handling.
-    if (!changes) throw new Error("no pokemon scheduled for today");
+export function decode_mask(mask: number) {
+  const decode_2bit = (bits: number): Cmp =>
+    bits === 0b10 ? "gt" : bits == 0b01 ? "lt" : "eq";
 
-    db.query(`DELETE FROM players_games_guesses WHERE game_id = $player_id`).run({ player_id });
-  })();
+  const decode_1bit = (bits: number): Eq =>
+    bits === 1 ? "ne" : "eq";
 
-  return player_id;
-}
-
-export function submit_guess(player_id: number, guessed_pokemon_id: number): { answer: string | null, status: Status, comparison: Comparison } {
-  const query = db.query<{ correct: number, guesses: number, comparison: string, answer: string | null }, { player_id: number, guessed_pokemon_id: number }>(`
-    INSERT INTO players_games_guesses (game_id, guessed_pokemon_id)
-    VALUES ($player_id, $guessed_pokemon_id)
-    RETURNING
-      (SELECT pokemon_id = guessed_pokemon_id FROM players_games WHERE player_id = $player_id) as correct,
-      (SELECT COUNT(*) FROM players_games_guesses WHERE game_id = $player_id) as guesses,
-      (
-        SELECT CASE
-          WHEN COUNT(*) >= (SELECT max_guesses FROM players_games WHERE player_id = $player_id)
-          THEN (SELECT name FROM pokemon WHERE id = (SELECT pokemon_id FROM players_games WHERE player_id = $player_id))
-          ELSE NULL
-        END FROM players_games_guesses WHERE game_id = $player_id
-      ) as answer,
-      (SELECT json_object(
-        'generation', generation,
-        'height', height,
-        'weight', weight,
-        'type1', type1,
-        'type2', type2
-      ) FROM pokemon_comparison WHERE
-        pokemon_src_id = $guessed_pokemon_id AND
-        pokemon_tgt_id = (SELECT pokemon_id FROM players_games WHERE player_id = $player_id)
-      ) as comparison
-`);
-
-  const row = query.get({ player_id, guessed_pokemon_id })!;
-
-  let status: Status = "playing";
-
-  if (row.correct > 0) status = "won";
-  if (row.answer !== null) status = "lost";
-
-  return { answer: row.answer, status, comparison: JSON.parse(row.comparison) };
-}
-
-export function get_game_state(player_id: number) {
-  const game = db.query<{ max_guesses: number, pokemon_id: number, player_id: number }, { player_id: number }>(`
-    SELECT player_id, max_guesses, pokemon_id FROM players_games WHERE player_id = $player_id
-  `).get({ player_id });
-
-  if (!game) return null;
-
-  const guesses = db.query<{ guessed_pokemon_id: number, name: string, comparison: string }, { player_id: number, pokemon_id: number, max_guesses: number }>(`
-    SELECT
-      g.guessed_pokemon_id,
-      p.name,
-      (
-        SELECT json_object(
-          'generation', generation,
-          'height', height,
-          'weight', weight,
-          'type1', type1,
-          'type2', type2
-        ) FROM pokemon_comparison WHERE
-          pokemon_src_id = g.guessed_pokemon_id AND
-          pokemon_tgt_id = $pokemon_id
-      ) as comparison
-    FROM players_games_guesses AS g
-    JOIN pokemon AS p ON p.id = g.guessed_pokemon_id
-    WHERE g.game_id = $player_id
-    ORDER BY g.created_at ASC
-    LIMIT $max_guesses
-  `).all({ ...game });
-
-  let status: Status = "playing";
-
-  if (guesses.at(-1)?.guessed_pokemon_id === game.pokemon_id) status = "won";
-  if (guesses.length >= game.max_guesses) status = "lost";
-
-  return { status, guesses: guesses.map(g => ({ ...g, comparison: JSON.parse(g.comparison) })) };
-}
-
-if (import.meta.main) {
-  console.log(submit_guess(3, 618));
+  return {
+    gen: decode_2bit((mask >> 6) & 0b11),
+    height: decode_2bit((mask >> 4) & 0b11),
+    weight: decode_2bit((mask >> 2) & 0b11),
+    type1: decode_1bit((mask >> 1) & 0b1),
+    type2: decode_1bit((mask >> 0) & 0b1)
+  };
 }
