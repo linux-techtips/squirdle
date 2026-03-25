@@ -23,7 +23,7 @@ export type GameStatus = "playing" | "won" | "lost";
 
 export type GameSummary = {
   status: GameStatus,
-  masks: Uint8Array,
+  masks: number[],
   answer_id: number | null,
 };
 
@@ -49,10 +49,16 @@ export function migrate(db: Database) {
       type2 TEXT CHECK (type2 IN (${poke_type_check}))
     ) STRICT;
 
-    CREATE TABLE games (
+    CREATE TABLE players (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL
+    ) STRICT;
+
+    CREATE TABLE games (
+      id INTEGER PRIMARY KEY REFERENCES players(id),
       pokemon_id INTEGER NOT NULL REFERENCES pokemon(id),
-      max_guess_count INTEGER NOT NULL DEFAULT 6 CHECK (max_guess_count > 0)
+      max_guess_count INTEGER NOT NULL DEFAULT 6 CHECK (max_guess_count > 0),
+      started_at INTEGER NOT NULL DEFAULT (UNIXEPOCH())
     ) STRICT;
 
     CREATE TABLE guesses (
@@ -68,7 +74,7 @@ export function migrate(db: Database) {
     ) STRICT;
 
     CREATE VIEW pokemon_today AS
-    SELECT pokemon_id FROM pokemon_schedule WHERE scheduled_at = ((UNIXEPOCH() / 86400) * 86400);
+    SELECT pokemon_id, scheduled_at FROM pokemon_schedule WHERE scheduled_at = ((UNIXEPOCH() / 86400) * 86400);
 
     CREATE VIEW pokemon_comparison AS
     SELECT
@@ -150,6 +156,26 @@ export function migrate(db: Database) {
       pc.tgt_pokemon_id = gs.pokemon_id
     GROUP BY gs.game_id
     ORDER BY gu.guessed_at;
+
+    CREATE TRIGGER prevent_restarting_game_on_same_day
+    BEFORE INSERT ON games
+    BEGIN
+      SELECT RAISE(ABORT, 'game already started today')
+      WHERE EXISTS (
+        SELECT 1 FROM games WHERE id = NEW.id
+        AND (started_at / 86400) * 86400 = (UNIXEPOCH() / 86400) * 86400
+      );
+    END;
+
+    -- TODO: (Carter) this might be slow.
+    CREATE TRIGGER prevent_guessing_after_game_complete
+    BEFORE INSERT ON guesses
+    BEGIN
+      SELECT RAISE(ABORT, 'game already complete')
+      WHERE EXISTS (
+        SELECT 1 FROM game_summary WHERE game_id = NEW.game_id AND status != 'playing'
+      );
+    END;
   `);
 }
 
@@ -189,16 +215,38 @@ export function seed(
   return seed();
 }
 
-export function start_game(db: Database): number {
-  const start = db.query<{ id: number }, {}>(`
-    INSERT INTO games (pokemon_id)
-    SELECT pokemon_id FROM pokemon_today
+export function create_player(db: Database, name: string): number {
+  const create = db.query<{ id: number }, { name: string }>(`
+    INSERT INTO players (name) VALUES (:name) RETURNING id
+  `);
+
+  return create.get({ name })!.id;
+}
+
+// TODO: (Carter) explicitly handle the following cases:
+// 1. we cannot restart a game that is in progress for the same day.
+// 2. we must upsert into games if one has not already been started
+export function start_game(db: Database, player_id: number): number {
+  const start = db.query<{ id: number }, { player_id: number }>(`
+    INSERT INTO games (id, pokemon_id)
+    SELECT :player_id, pokemon_id FROM pokemon_today WHERE true
+    ON CONFLICT (id) DO UPDATE SET
+      pokemon_id = EXCLUDED.pokemon_id,
+      max_guess_count = EXCLUDED.max_guess_count,
+      started_at = UNIXEPOCH()
     RETURNING id
   `);
 
-  return start.get({})!.id;
+  const { id } = start.get({ player_id })!;
+
+  db.query(`DELETE FROM guesses WHERE game_id = :id`).run({ id });
+
+  return id;
 }
 
+// TODO: (Carter) explicitly handle the following cases:
+// 1. the game is already complete.
+// 2. it is tomorrow, this is an invariant, we must start a game before guessing.
 export function guess(db: Database, game_id: number, pokemon_id: number): GuessResult | null {
   const row = db.query<{ rowid: number }, { game_id: number, pokemon_id: number }>(`
     INSERT INTO guesses (game_id, pokemon_id)
@@ -224,7 +272,7 @@ export function game_summary(db: Database, game_id: number): GameSummary | null 
 
   if (result === null) return null;
 
-  return { ...result, masks: Uint8Array.fromHex(result.masks) };
+  return { ...result, masks: [...Uint8Array.fromHex(result.masks)] };
 }
 
 export type Cmp = "gt" | "lt" | "eq";

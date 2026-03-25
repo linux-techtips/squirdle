@@ -8,13 +8,28 @@ import * as squirdle from "./squirdle";
 const db = new Database(Bun.env.DATABASE_URL!, { strict: true });
 
 const api = {
+  "/players": {
+    POST: async (req: Request) => {
+      try {
+        const json = await req.json();
+        if (typeof json.name !== "string") throw new Error("no player name provided");
+
+        const id = squirdle.create_player(db, json.name);
+
+        return Response.json({ id }, { status: 201 });
+
+      } catch (e) {
+        return new Response(String(e), { status: 400 });
+      }
+    },
+  },
   "/games": {
     POST: async (req: Request) => {
       try {
         const json = await req.json();
         if (typeof json.player_id !== "string") throw new Error("no player_id provided");
 
-        const id = squirdle.start_game(db);
+        const id = squirdle.start_game(db, json.player_id);
 
         return Response.json({ id }, { status: 201 });
       } catch (e) {
