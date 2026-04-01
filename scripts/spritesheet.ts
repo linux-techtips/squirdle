@@ -9,7 +9,7 @@ export async function generateSpriteSheet(dir: string, name: string) {
 
 async function main() {
   const spritesDir = process.argv[2] ?? path.join(import.meta.dir, "sprites");
-  const sheetName = process.argv[3] ?? path.join(import.meta.dir, "../public/static/spritesheet.png");
+  const sheetName = process.argv[3] ?? path.join(import.meta.dir, "../public/static/spritesheet.webp");
 
   await generateSpriteSheet(spritesDir, sheetName);
 }

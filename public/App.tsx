@@ -1,40 +1,12 @@
 // TODO: (Carter) this will include the pokedex json in the js bundle.
 import pokedex from "@/public/static/pokedex.json";
 
+import type { Pokemon } from "@/types";
+
 import "./index.css";
 
 const TOTAL_POKEMON = 649;
 const COLS = Math.ceil(Math.sqrt(TOTAL_POKEMON));
-
-type PokemonType =
-  | "normal"
-  | "fighting"
-  | "flying"
-  | "poison"
-  | "ground"
-  | "rock"
-  | "bug"
-  | "ghost"
-  | "steel"
-  | "stellar"
-  | "fire"
-  | "water"
-  | "grass"
-  | "electric"
-  | "psychic"
-  | "ice"
-  | "dragon"
-  | "dark"
-  | "fairy"
-
-type Pokemon = {
-  generation: number,
-  height: number,
-  weight: number,
-  type1: PokemonType,
-  type2: PokemonType | null,
-  name: string,
-};
 
 export function Sprite({ id }: { id: number }) {
   return (
