@@ -223,9 +223,6 @@ export function create_player(db: Database, name: string): number {
   return create.get({ name })!.id;
 }
 
-// TODO: (Carter) explicitly handle the following cases:
-// 1. we cannot restart a game that is in progress for the same day.
-// 2. we must upsert into games if one has not already been started
 export function start_game(db: Database, player_id: number): number {
   const start = db.query<{ id: number }, { player_id: number }>(`
     INSERT INTO games (id, pokemon_id)
@@ -245,8 +242,7 @@ export function start_game(db: Database, player_id: number): number {
 }
 
 // TODO: (Carter) explicitly handle the following cases:
-// 1. the game is already complete.
-// 2. it is tomorrow, this is an invariant, we must start a game before guessing.
+// 1. it is tomorrow, this is an invariant, we must start a game before guessing.
 export function guess(db: Database, game_id: number, pokemon_id: number): GuessResult | null {
   const row = db.query<{ rowid: number }, { game_id: number, pokemon_id: number }>(`
     INSERT INTO guesses (game_id, pokemon_id)
