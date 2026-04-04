@@ -73,7 +73,7 @@ const api = {
 function serve(hostname: string) {
   return Bun.serve({
     routes: {
-      "/": index,
+      "/*": index,
       ...api,
     },
 
