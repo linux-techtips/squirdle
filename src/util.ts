@@ -1,4 +1,4 @@
-import type { Pokemon } from "./squirdle";
+import type { Pokemon, Pokedex } from "./squirdle";
 
 export const MAX_POKEMON_COUNT = 649 as const;
 
@@ -71,7 +71,7 @@ export function satisfies(candidate: Pokemon, guessed: Pokemon, constraint: Cons
   );
 }
 
-export function constrain(dataset: Pokemon[], guesses: Guess[]): Pokemon[] {
+export function constrain(dataset: Pokedex, guesses: Guess[]): Pokedex {
   return dataset.filter((candidate) =>
     guesses.every(({ guessed, constraint }) =>
       satisfies(candidate, guessed, constraint))

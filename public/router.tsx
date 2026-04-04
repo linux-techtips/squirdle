@@ -33,7 +33,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
     <Context.Provider value={{ path, navigate }}>
       {children}
     </Context.Provider>
-  )
+  );
 }
 
 export function useRouter() {
