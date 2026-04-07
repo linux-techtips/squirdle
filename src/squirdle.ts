@@ -11,6 +11,7 @@ export const POKEMON_TYPES = [
 export type PokemonType = typeof POKEMON_TYPES[number];
 
 export type Pokemon = {
+  id: number,
   name: string,
   generation: number,
   height: number,
@@ -18,6 +19,8 @@ export type Pokemon = {
   type1: PokemonType,
   type2: PokemonType | null;
 };
+
+export type Pokedex = Pokemon[];
 
 export type GameStatus = "playing" | "won" | "lost";
 
@@ -181,12 +184,12 @@ export function migrate(db: Database) {
 
 export function seed(
   db: Database,
-  pokedex: Pokemon[],
+  pokedex: Pokedex,
   ids: number[],
   date_offset: number = 0,
 ) {
   const seed = db.transaction(() => {
-    const insert = db.query<{}, Pokemon & { id: number }>(`
+    const insert = db.query<{}, Pokemon>(`
       INSERT INTO pokemon (id, name, generation, height, weight, type1, type2)
       VALUES (:id, :name, :generation, :height, :weight, :type1, :type2)
     `);
@@ -197,7 +200,7 @@ export function seed(
     `);
 
     for (let i = 0; i < pokedex.length; i += 1) {
-      insert.run({ id: i + 1, ...pokedex[i]! });
+      insert.run(pokedex[i]!);
     }
 
     const today = util.today();

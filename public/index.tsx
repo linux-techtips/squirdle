@@ -1,14 +1,18 @@
 import { createRoot } from "react-dom/client";
-import { StrictMode } from "react";
+
+import * as Router from "@/public/router";
+import * as React from "react";
 
 import App from "./App";
 
 import "@picocss/pico";
 
 const app = (
-  <StrictMode>
-    <App />
-  </StrictMode>
+  <React.StrictMode>
+    <Router.Provider>
+      <App />
+    </Router.Provider>
+  </React.StrictMode>
 );
 
 if (import.meta.hot) {
