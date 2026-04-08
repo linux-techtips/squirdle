@@ -1,40 +1,7 @@
-import type { Database } from "bun:sqlite";
+import { POKEMON_TYPES, type Pokemon } from "@/lib";
+import * as lib from "@/lib";
 
-import * as util from "./util";
-
-export const POKEMON_TYPES = [
-  "normal", "fire", "water", "electric", "grass", "ice",
-  "fighting", "poison", "ground", "flying", "psychic", "bug",
-  "rock", "ghost", "dragon", "dark", "steel", "fairy",
-] as const;
-
-export type PokemonType = typeof POKEMON_TYPES[number];
-
-export type Pokemon = {
-  id: number,
-  name: string,
-  generation: number,
-  height: number,
-  weight: number,
-  type1: PokemonType,
-  type2: PokemonType | null;
-};
-
-export type Pokedex = Pokemon[];
-
-export type GameStatus = "playing" | "won" | "lost";
-
-export type GameSummary = {
-  status: GameStatus,
-  masks: number[],
-  answer_id: number | null,
-};
-
-export type GuessResult = {
-  mask: number,
-  status: GameStatus,
-  answer_id: number | null,
-};
+import { Database } from "bun:sqlite";
 
 export function migrate(db: Database) {
   const poke_type_check = POKEMON_TYPES.map(t => `'${t}'`).join(',');
@@ -182,113 +149,35 @@ export function migrate(db: Database) {
   `);
 }
 
-export function seed(
-  db: Database,
-  pokedex: Pokedex,
-  ids: number[],
-  date_offset: number = 0,
-) {
-  const seed = db.transaction(() => {
-    const insert = db.query<{}, Pokemon>(`
+export function seedPokedex(db: Database, pokedex: Pokemon[]) {
+  const txn = db.transaction(() => {
+    using insertPokemon = db.query<{}, Pokemon>(`
       INSERT INTO pokemon (id, name, generation, height, weight, type1, type2)
       VALUES (:id, :name, :generation, :height, :weight, :type1, :type2)
     `);
 
-    const schedule = db.query<{}, { date: number, id: number }>(`
-      INSERT INTO pokemon_schedule (scheduled_at, pokemon_id)
-      VALUES ($date, $id)
-    `);
-
     for (let i = 0; i < pokedex.length; i += 1) {
-      insert.run(pokedex[i]!);
+      insertPokemon.run(pokedex[i]!);
     }
-
-    const today = util.today();
-
-    let i = 0;
-    for (const id of ids) {
-      schedule.run({ date: today + ((i + date_offset) * 86400), id });
-      i += 1;
-    }
-
-    schedule.finalize();
-    insert.finalize();
   });
 
-  return seed();
+  return txn();
 }
 
-export function create_player(db: Database, name: string): number {
-  const create = db.query<{ id: number }, { name: string }>(`
-    INSERT INTO players (name) VALUES (:name) RETURNING id
-  `);
+export function seedSchedule(db: Database, schedule: number[], today = lib.today) {
+  const txn = db.transaction(() => {
+    using insertSchedule = db.query<{}, { date: number, id: number }>(`
+      INSERT INTO pokemon_schedule (scheduled_at, pokemon_id)
+      VALUES (:date, :id)
+    `);
 
-  return create.get({ name })!.id;
+    const date = today();
+    for (let i = 0; i < schedule.length; i += 1) {
+      insertSchedule.run({ date: date + (i * 86400), id: schedule[i]! });
+    }
+  });
+
+  return txn();
 }
 
-export function start_game(db: Database, player_id: number): number {
-  const start = db.query<{ id: number }, { player_id: number }>(`
-    INSERT INTO games (id, pokemon_id)
-    SELECT :player_id, pokemon_id FROM pokemon_today WHERE true
-    ON CONFLICT (id) DO UPDATE SET
-      pokemon_id = EXCLUDED.pokemon_id,
-      max_guess_count = EXCLUDED.max_guess_count,
-      started_at = UNIXEPOCH()
-    RETURNING id
-  `);
-
-  const { id } = start.get({ player_id })!;
-
-  db.query(`DELETE FROM guesses WHERE game_id = :id`).run({ id });
-
-  return id;
-}
-
-// TODO: (Carter) explicitly handle the following cases:
-// 1. it is tomorrow, this is an invariant, we must start a game before guessing.
-export function guess(db: Database, game_id: number, pokemon_id: number): GuessResult | null {
-  const row = db.query<{ rowid: number }, { game_id: number, pokemon_id: number }>(`
-    INSERT INTO guesses (game_id, pokemon_id)
-    VALUES (:game_id, :pokemon_id)
-    RETURNING rowid
-  `).get({ game_id, pokemon_id });
-
-  if (!row) throw new Error("failed to make guess");
-
-  const result = db.query<GuessResult, { rowid: number }>(`
-    SELECT gr.* FROM guess_result AS gr
-    JOIN guesses gu ON gu.game_id = gr.game_id AND gu.pokemon_id = gr.pokemon_id
-    WHERE gu.rowid = :rowid
-  `).get({ rowid: row.rowid });
-
-  return result;
-}
-
-export function game_summary(db: Database, game_id: number): GameSummary | null {
-  const result = db.query<Omit<GameSummary, "masks"> & { masks: string }, { game_id: number }>(`
-    SELECT * FROM game_summary WHERE game_id = :game_id
-  `).get({ game_id });
-
-  if (result === null) return null;
-
-  return { ...result, masks: [...Uint8Array.fromHex(result.masks)] };
-}
-
-export type Cmp = "gt" | "lt" | "eq";
-export type Eq = "eq" | "ne";
-
-export function decode_mask(mask: number) {
-  const decode_2bit = (bits: number): Cmp =>
-    bits === 0b10 ? "gt" : bits == 0b01 ? "lt" : "eq";
-
-  const decode_1bit = (bits: number): Eq =>
-    bits === 1 ? "ne" : "eq";
-
-  return {
-    gen: decode_2bit((mask >> 6) & 0b11),
-    height: decode_2bit((mask >> 4) & 0b11),
-    weight: decode_2bit((mask >> 2) & 0b11),
-    type1: decode_1bit((mask >> 1) & 0b1),
-    type2: decode_1bit((mask >> 0) & 0b1)
-  };
-}
+export { Database };
