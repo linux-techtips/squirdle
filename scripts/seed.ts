@@ -1,17 +1,14 @@
-import * as squirdle from "@/squirdle";
-import * as util from "@/util";
-
-import { Database } from "bun:sqlite";
+import * as db from "@/server/db";
+import * as lib from "@/lib";
 
 async function main() {
   const [pokedex_path = "pokedex.json"] = Bun.argv.slice(2);
-
   const pokedex = await Bun.file(pokedex_path).json();
 
-  const db = new Database(Bun.env.DATABASE_URL, { strict: true });
+  const sqlite = db.SQLiteDatabase.open(Bun.env.DATABASE_URL!, { strict: true });
 
-  squirdle.migrate(db);
-  squirdle.seed(db, pokedex, util.sample_ids(365));
+  db.seed_pokemon(sqlite, pokedex);
+  db.seed_schedule(sqlite, lib.sample_ids(100));
 }
 
 if (import.meta.main) main();

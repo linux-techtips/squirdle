@@ -25,9 +25,6 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ],
-      "@/public/*": [
-        "./public/*"
       ]
     },
     // Some stricter flags (disabled by default)
