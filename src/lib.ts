@@ -1,37 +1,6 @@
-export const MAX_POKEMON_COUNT = 649;
+import type { Pokemon, Constraint, Guess } from "./types";
 
-export const POKEMON_TYPES = [
-  "normal", "fire", "water", "electric", "grass", "ice",
-  "fighting", "poison", "ground", "flying", "psychic", "bug",
-  "rock", "ghost", "dragon", "dark", "steel", "fairy",
-] as const;
-
-export type PokemonType = typeof POKEMON_TYPES[number];
-
-export type Pokemon = {
-  id: number,
-  name: string,
-  generation: number,
-  height: number,
-  weight: number,
-  type1: PokemonType,
-  type2: PokemonType | null,
-};
-
-export type Constraint = number;
-export type Guess = { guessed: Pokemon, constraint: Constraint };
-
-export type GameStatus = "playing" | "won" | "lost"
-
-export type GuessResult = {
-  mask: number,
-  status: GameStatus,
-};
-
-export type GameSummary = {
-  masks: number[],
-  status: GameStatus,
-};
+export const MAX_POKEMON_COUNT = 649 as const;
 
 export function compare(guessed: Pokemon, against: Pokemon): Constraint {
   let constraint: Constraint = 0;
@@ -81,6 +50,10 @@ export function today(now: () => number = Date.now): number {
   return Math.floor(Math.floor(now() / 1000) / 86400) * 86400;
 }
 
+export function now_in_seconds(now: () => number = Date.now): number {
+  return Math.floor(now() / 1000);
+}
+
 // https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
 export function sample_ids(count: number, random: () => number = Math.random): number[] {
   const ids = Array.from({ length: MAX_POKEMON_COUNT }, (_, i) => i + 1);
@@ -100,11 +73,4 @@ export function sample_ids(count: number, random: () => number = Math.random): n
   }
 
   return acc;
-}
-
-export async function embedCompressed(path: string) {
-  const buffer = await Bun.file(path).arrayBuffer();
-  const compressed = Bun.gzipSync(buffer);
-
-  return compressed;
 }

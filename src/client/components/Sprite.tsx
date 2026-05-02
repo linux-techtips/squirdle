@@ -1,17 +1,27 @@
-import { MAX_POKEMON_COUNT } from "@/lib";
+import * as React from "react";
 
-const COLS = Math.ceil(Math.sqrt(MAX_POKEMON_COUNT));
+const SPRITE_SIZE = 96 as const;
+const SPRITE_COLS = 26 as const;
+const SPRITE_ROWS = 25 as const;
 
-export default function ({ id, title }: { id: number, title?: string }) {
-  // TODO: (Carter) i can probably use mod and div within calc?
-  return (
-    <img
-      className="poke-sprite"
-      title={title}
-      style={{
-        "--x": id % COLS,
-        "--y": Math.floor(id / COLS),
-      }}
-    />
-  );
+type Props = { poke_id: number, title?: string };
+
+export default function Sprite({ poke_id, title }: Props) {
+  const idx = poke_id - 1;
+  const x = idx % SPRITE_COLS;
+  const y = Math.floor(idx / SPRITE_COLS);
+
+  return <div
+    role="img"
+    className="poke-sprite"
+    title={title}
+    aria-label={title ?? `Pokemon #${poke_id}`}
+    style={{
+      "--size": SPRITE_SIZE,
+      "--cols": SPRITE_COLS,
+      "--rows": SPRITE_ROWS,
+      "--x": x,
+      "--y": y,
+    } as React.CSSProperties}
+  />;
 }

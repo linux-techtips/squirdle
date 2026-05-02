@@ -1,8 +1,12 @@
-img.poke-sprite {
-  width: 96px;
-  height: 96px;
+@import url("@picocss/pico");
+
+[role=img].poke-sprite {
+  flex: 0 0 auto;
+  width: calc(var(--size) * 1px);
+  height: calc(var(--size) * 1px);
   background-image: url("assets/spritesheet.webp");
   background-repeat: no-repeat;
-  background-position: calc(var(--x) * -96px) calc(var(--y) * -96px);
+  background-size: calc(var(--cols) * var(--size) * 1px) calc(var(--rows) * var(--size) * 1px);
+  background-position: calc(var(--x) * var(--size) * -1px) calc(var(--y) * var(--size) * -1px);
   image-rendering: pixelated;
 }

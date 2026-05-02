@@ -1,9 +1,8 @@
-import { Database, migrate } from "@/server/db";
-import * as lib from "@/lib";
+import * as db from "@/server/db";
 
 async function main() {
-  using db = new Database(Bun.env.DATABASE_URL, { strict: true });
-  migrate(db);
+  const sqlite = db.SQLiteDatabase.open(Bun.env.DATABASE_URL!, { strict: true });
+  db.migrate(sqlite);
 }
 
 if (import.meta.main) main();
