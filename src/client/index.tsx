@@ -4,10 +4,16 @@ import { createRoot } from "react-dom/client";
 import * as React from "react";
 
 import { SignIn, SignUp, Game, App } from "./components/App";
+import Profile from "./pages/Profile.tsx";
+import Pokedex from "./pages/Pokedex.tsx";
+import Settings from "./pages/Settings.tsx";
+
 import * as tokin from "@/tokin/client";
 import type { GameState, GuessResult } from "@/types";
 
 import "./style.css";
+
+
 
 export namespace Router {
   type RouteComponent = (props?: any) => React.ReactNode;
@@ -207,6 +213,9 @@ export namespace Squirdle {
 const routes = {
   "/": App,
   "/game": Game,
+  "/profile": Profile,
+  "/pokedex": Pokedex,
+  "/settings": Settings,
   "/signup": SignUp,
   "/signin": SignIn,
 } as const;

@@ -30,3 +30,4 @@ export type DBUser = {
 };
 
 export type User = Omit<DBUser, "passhash">;
+

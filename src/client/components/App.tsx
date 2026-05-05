@@ -6,6 +6,8 @@ import pokedex from "@/pokedex.json";
 
 import Sprite from "./Sprite";
 
+import Homescreen from "../pages/Homescreen.tsx";
+
 const pokemon = pokedex as Pokemon[];
 const pokemon_by_id = new Map(pokemon.map(p => [p.id, p]));
 const pokemon_by_name = new Map(pokemon.map(p => [p.name.toLowerCase(), p]));
@@ -100,25 +102,46 @@ export function Game() {
   );
 }
 
-export function App() {
-  const auth = Auth.use();
+// export function App() {
+//   const auth = Auth.use();
+//   const router = Router.use();
 
-  if (auth.isSignedIn()) {
-    return (
-      <>
-        <h1>Hello {auth.state!.username}</h1>
-        <StartGameButton />
-      </>
-    );
-  } else {
-    return (
-      <div role="group">
-        <a href="/signin">Sign In</a>
-        <a href="/signup">Sign Up</a>
-      </div>
-    );
-  }
+//   if (auth.isSignedIn()) {
+//     return (
+//       <Homescreen
+//         onStartGame={() => router.navigate("/game")}
+//         onGoHome={() => router.navigate("/")}
+//         onOpenProfile={() => router.navigate("/profile")}
+//         onOpenPokedex={() => router.navigate("/pokedex")}
+//       />
+//     );
+//   }
+//    else {
+//     return (
+//       <div role="group">
+//         <a href="/signin">Sign In</a>
+//         <a href="/signup">Sign Up</a>
+//       </div>
+//     );
+//   }
+// }
+
+
+//Testing Purposes
+export function App() {
+  const router = Router.use();
+
+  return (
+    <Homescreen
+      onStartGame={() => router.navigate("/game")}
+      onGoHome={() => router.navigate("/")}
+      onOpenProfile={() => router.navigate("/profile")}
+      onOpenPokedex={() => router.navigate("/pokedex")}
+      onOpenSettings={() => router.navigate("/settings")}
+    />
+  );
 }
+//End of Testing Purposes
 
 export function StartGameButton() {
   const squirdle = Squirdle.use();
@@ -196,4 +219,4 @@ export function SignIn() {
       <a href="/signup">Sign Up instead</a>
     </>
   );
-}
+ }
