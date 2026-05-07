@@ -1,202 +1,164 @@
 import { Database as SQLiteDatabase, SQLiteError } from "bun:sqlite";
-export { SQLiteDatabase, SQLiteError };
+export type { SQLiteDatabase };
 
-import { POKEMON_TYPES, type Pokemon, type GameState, type GuessResult, type Guess } from "@/types";
-import * as lib from "@/lib";
+import type { GameState, GuessResult, GuessMade, Pokemon, Profile, User, Registration } from "@/types";
 
-export function migrate(sqlite: SQLiteDatabase) {
-  const type_check = POKEMON_TYPES.map(t => `'${t}'`).join(",");
+import schema from "@/schema.sql" with { type: "text" };
+import type { App } from "@/server/app";
 
-  sqlite.run(`PRAGMA foreign_keys = ON`);
+export function open(filename: string): SQLiteDatabase {
+  const sqlite = SQLiteDatabase.open(filename, { strict: true });
 
-  return sqlite.transaction(() => {
-    sqlite.run(`
-      CREATE TABLE pokemon (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL UNIQUE,
-        generation INTEGER NOT NULL,
-        height INTEGER NOT NULL,
-        weight INTEGER NOT NULL,
-        type1 TEXT NOT NULL CHECK (type1 IN (${type_check})),
-        type2 TEXT CHECK (type2 IN (${type_check}))
-      ) STRICT;
+  sqlite.run(`PRAGMA FOREIGN_KEYS = ON;`);
 
-      CREATE TABLE players (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL UNIQUE,
-        passhash TEXT NOT NULL
-      ) STRICT;
+  return sqlite;
+}
 
-      CREATE TABLE games (
-        id INTEGER PRIMARY KEY REFERENCES players(id),
-        pokemon_id INTEGER NOT NULL REFERENCES pokemon(id),
-        max_guess_count INTEGER NOT NULL DEFAULT 6 CHECK (max_guess_count > 0),
-        started_at INTEGER NOT NULL DEFAULT (UNIXEPOCH())
-      ) STRICT;
+export function migrate(sqlite: SQLiteDatabase): void {
+  sqlite.transaction(() => sqlite.run(schema))();
+}
 
-      CREATE TABLE guesses (
-        game_id INTEGER NOT NULL REFERENCES games(id),
-        pokemon_id INTEGER NOT NULL REFERENCES pokemon(id),
-        guessed_at INTEGER NOT NULL DEFAULT (UNIXEPOCH()),
-        UNIQUE(game_id, pokemon_id)
-      ) STRICT;
+export function register({ sqlite, clock }: App, registration: Registration): Profile | null {
+  const txn = sqlite.transaction(() => {
+    sqlite.query<void, Registration & { created_at: number }>(`
+      INSERT INTO registrations (username, passhash, created_at, favorite_pokemon_id)
+      VALUES (:username, :passhash, :created_at, :favorite_pokemon_id);
+    `).get({ ...registration, created_at: clock.seconds() });
 
-      CREATE TABLE schedule (
-        scheduled_at INTEGER PRIMARY KEY CHECK(scheduled_at % 86400 = 0),
-        pokemon_id INTEGER NOT NULL REFERENCES pokemon(id)
-      ) STRICT;
+    // TODO: This is a hack that will not perform as well as an id lookup. SQLite is kind of stupid.
+    const query = sqlite.query<Profile, [string]>(`
+      SELECT * FROM profiles WHERE username = :0
+    `);
 
-      CREATE VIEW compare_pokemon AS
-      SELECT
-        src.id AS src_pokemon_id,
-        tgt.id AS tgt_pokemon_id,
-        (
-          CASE
-            WHEN src.generation > tgt.generation THEN 128
-            WHEN src.generation < tgt.generation THEN 64
-            ELSE 0
-          END
-          |
-          CASE
-            WHEN src.height > tgt.height THEN 32
-            WHEN src.height < tgt.height THEN 16
-            ELSE 0
-          END
-          |
-          CASE
-            WHEN src.weight > tgt.weight THEN 8
-            WHEN src.weight < tgt.weight THEN 4
-            ELSE 0
-          END
-          |
-          CASE
-            WHEN src.type1 != tgt.type1 THEN 2
-            ELSE 0
-          END
-          |
-          CASE
-            WHEN src.type2 IS NOT tgt.type2 THEN 1
-            ELSE 0
-          END
-        ) AS mask
-      FROM pokemon AS src
-      JOIN pokemon AS tgt;
+    return query.get(registration.username);
+  });
 
-      CREATE VIEW pokemon_scheduled_today AS
-      SELECT pokemon_id FROM schedule WHERE scheduled_at = ((UNIXEPOCH() / 86400) * 86400);
+  try {
+    return txn();
+  } catch (e) {
+    if (e instanceof SQLiteError && e.code === "SQLITE_CONSTRAINT_UNIQUE") return null;
+    throw e;
+  }
+}
 
-      CREATE TRIGGER clear_guesses_on_game_reset
-      AFTER UPDATE ON games
-      WHEN NEW.started_at != OLD.started_at
-      BEGIN
-        DELETE FROM guesses WHERE game_id = OLD.id;
-      END;
-
-      CREATE TRIGGER guesses_remaining_check BEFORE INSERT ON guesses
-      BEGIN
-        SELECT RAISE(ABORT, 'no guesses remaining')
-        WHERE (
-          SELECT game.max_guess_count - COUNT(guess.game_id)
-          FROM games AS game
-          LEFT JOIN guesses AS guess ON guess.game_id = game.id
-          WHERE game.id = NEW.game_id
-          GROUP BY game.id
-        ) <= 0;
-      END;
+export function user({ sqlite }: App, username: string): User | null {
+  const query = sqlite.query<User, [string]>(`
+    SELECT * FROM users WHERE username = :0;
   `);
-  })();
+
+  return query.get(username);
 }
 
-export function start_or_get_game(sqlite: SQLiteDatabase, player_id: number): GameState | null {
-  sqlite.query(`
-    INSERT INTO games (id, pokemon_id)
-    SELECT :player_id, pokemon_id FROM pokemon_scheduled_today
-    WHERE true
-    ON CONFLICT (id) DO UPDATE SET
-      pokemon_id = EXCLUDED.pokemon_id,
-      max_guess_count = EXCLUDED.max_guess_count,
-      started_at = (UNIXEPOCH())
-    WHERE games.started_at < (UNIXEPOCH() / 86400) * 86400
-  `).run({ player_id });
+export function delete_user({ sqlite }: App, id: number): boolean {
+  const query = sqlite.query<number, [number]>(`
+    DELETE FROM users WHERE id = :0 RETURNING id;
+  `);
 
-  return game_state(sqlite, player_id);
+  return query.get(id) !== null;
 }
 
-export function game_state(sqlite: SQLiteDatabase, player_id: number): GameState | null {
-  const remaining = sqlite.query<{ remaining_guesses: number }, { player_id: number }>(`
-    SELECT (
-      game.max_guess_count - (SELECT COUNT(*) FROM guesses WHERE game_id = game.id)
-    ) AS remaining_guesses
-    FROM games AS game
-    WHERE game.id = :player_id
-      AND game.started_at >= (UNIXEPOCH() / 86400) * 86400
-  `).get({ player_id });
+export function player_profile({ sqlite }: App, player_id: number): Profile | null {
+  const query = sqlite.query<Profile, [number]>(`
+    SELECT * FROM profiles WHERE id = :0;
+  `);
 
-  if (!remaining) return null;
+  return query.get(player_id);
+}
 
-  const guesses = sqlite.query<Guess, { player_id: number }>(`
+export function start_or_get_game(app: App, player_id: number): GameState | null {
+  // TODO: (Carter) Started at will update everytime we get the game. not when it's a new day.
+  const query = app.sqlite.query<{}, [number, number, number]>(`
+    INSERT INTO games (player_id, pokemon_id, started_at)
+    SELECT :0, schedule.pokemon_id, :1 AS scheduled FROM schedule
+    WHERE schedule.started_at = :2
+    ON CONFLICT (player_id) DO UPDATE SET
+      started_at = EXCLUDED.started_at,
+      pokemon_id = EXCLUDED.pokemon_id
+    RETURNING pokemon_id;
+  `);
+
+  // NOTE: No pokemon were scheduled for today.
+  if (query.get(player_id, app.clock.seconds(), app.clock.day()) === null) return null;
+
+  return game_state(app, player_id);
+}
+
+export function game_state({ sqlite }: App, player_id: number): GameState | null {
+  const guesses = sqlite.query<GuessMade, [number]>(`
     SELECT cmp.mask, guesses.pokemon_id
     FROM guesses
-    JOIN games AS game ON game.id = guesses.game_id
+    JOIN games AS game ON game.player_id = :0
     JOIN compare_pokemon AS cmp
       ON cmp.src_pokemon_id = guesses.pokemon_id
      AND cmp.tgt_pokemon_id = game.pokemon_id
-    WHERE guesses.game_id = :player_id
-    ORDER BY guesses.guessed_at
-  `).all({ player_id });
+    WHERE guesses.player_id = :0
+    ORDER BY guesses.guessed_at;
+  `).all(player_id);
 
-  return { guesses, remaining_guesses: remaining.remaining_guesses };
+  const reamaining = sqlite.query<{ remaining: number }, [number]>(`
+    SELECT
+      (SELECT game.max_guess_count - COUNT(*) FROM guesses WHERE player_id = game.player_id) AS remaining
+    FROM games AS game WHERE game.player_id = :0
+  `).get(player_id);
+
+  return { guesses, ...reamaining! };
 }
 
-export function make_guess(sqlite: SQLiteDatabase, player_id: number, pokemon_id: number): GuessResult | null {
-  // Someone needs to stop my freak.
-  const inserted = sqlite.query<GuessResult, { player_id: number, pokemon_id: number }>(`
+export function make_guess({ sqlite, clock }: App, player_id: number, pokemon_id: number): GuessResult | null {
+  const query = sqlite.query<GuessResult, [number, number, number]>(`
     WITH state AS (
       SELECT
-        game.id AS game_id,
-        game.max_guess_count,
-        game.started_at,
-        cmp.mask,
-        (SELECT COUNT(*) FROM guesses WHERE game_id = game.id) AS guess_count,
-        EXISTS(
-          SELECT 1 FROM guesses
-          WHERE game_id = game.id AND pokemon_id = game.pokemon_id
-        ) AS won
-      FROM games AS game
-      JOIN compare_pokemon AS cmp
-        ON cmp.src_pokemon_id = :pokemon_id
-       AND cmp.tgt_pokemon_id = game.pokemon_id
-      WHERE game.id = :player_id
+        player_id, pokemon_id AS tgt_pokemon_id,
+        (SELECT game.max_guess_count - COUNT(*) FROM guesses WHERE player_id = game.player_id) AS remaining,
+        EXISTS (SELECT 1 FROM guesses WHERE player_id = game.player_id AND pokemon_id = game.pokemon_id) AS won
+      FROM games AS game WHERE game.player_id = :0
     )
-    INSERT INTO guesses (game_id, pokemon_id)
-    SELECT game_id, :pokemon_id FROM state
-    WHERE started_at >= (UNIXEPOCH() / 86400) * 86400
-      AND guess_count < max_guess_count
-      AND NOT won
-    ON CONFLICT DO NOTHING
+    INSERT INTO guesses (player_id, pokemon_id, guessed_at)
+    SELECT state.player_id, :1, :2 FROM state
+    WHERE state.remaining > 0 AND NOT state.won
     RETURNING
-      (SELECT mask FROM state) AS mask,
-      (SELECT max_guess_count - guess_count - 1 FROM state) AS remaining_guesses,
-      :pokemon_id AS pokemon_id
-  `).get({ player_id, pokemon_id });
+      (
+        SELECT mask FROM compare_pokemon
+        WHERE src_pokemon_id = guesses.pokemon_id
+          AND tgt_pokemon_id = (SELECT tgt_pokemon_id FROM state)
+      ) AS mask,
+      (SELECT remaining FROM state) AS remaining;
+  `);
 
-  // TODO: (Carter) Handle the following errors explicitly:
-  // 1. The game has not been started.
-  // 2. The game is no longer valid (was started yesterday).
-  // 3. The player has already won the game.
-  // 4. The number of guesses exceeds max guess count.
-  // 5. The player made the same guess twice.
+  try {
+    return query.get(player_id, pokemon_id, clock.seconds());
+  } catch (e) {
+    // TODO: (Carter) need a concrete error as we can return null if there was no active game.
+    if (e instanceof SQLiteError && e.code === "SQLITE_CONSTRAINT_UNIQUE") return null;
 
-  // TODO: (Carter) Aggregate game results when it ends:
-  // 1. How many guesses were made and whether the player won or lost.
-  // 2. We can do this via trigger or in application code. I need to weigh pros/cons
-
-  return inserted;
+    throw e;
+  }
 }
 
-export function seed_schedule(sqlite: SQLiteDatabase, pokemon_ids: number[]) {
-  const insert = sqlite.query<{}, { date: number, id: number }>(`
-    INSERT INTO schedule (scheduled_at, pokemon_id) VALUES (:date, :id)
+export function search_profiles({ sqlite }: App, query: string, limit: number = 20): Profile[] {
+  const fts_query = build_fts_query(query);
+  if (fts_query === null) return [];
+
+  return sqlite.query<Profile, [string, number]>(`
+    SELECT profile.*
+    FROM users_fts AS fts
+    JOIN players AS player ON player.id = fts.rowid
+    JOIN profiles AS profile ON profile.id = player.id
+    WHERE users_fts MATCH ?
+    ORDER BY rank
+    LIMIT ?;
+  `).all(query, limit);
+}
+
+function build_fts_query(input: string): string | null {
+  const cleaned = input.trim().replace(/"/g, "");
+  if (cleaned.length < 3) return null;
+  return `"${cleaned}"*`;
+}
+
+export function seed_schedule({ sqlite, clock }: App, pokemon_ids: number[]) {
+  const insert = sqlite.query<void, { date: number, id: number }>(`
+    INSERT INTO schedule (started_at, pokemon_id) VALUES (:date, :id)
   `);
 
   const txn = sqlite.transaction((today: number) => {
@@ -207,11 +169,11 @@ export function seed_schedule(sqlite: SQLiteDatabase, pokemon_ids: number[]) {
     insert.finalize();
   });
 
-  return txn(lib.today());
+  return txn(clock.day());
 }
 
-export function seed_pokemon(sqlite: SQLiteDatabase, pokemon: Pokemon[]) {
-  const insert = sqlite.query<{}, Pokemon>(`
+export function seed_pokemon({ sqlite }: App, pokemon: Pokemon[]) {
+  const insert = sqlite.query<void, Pokemon>(`
     INSERT INTO pokemon (id, name, generation, height, weight, type1, type2)
     VALUES (:id, :name, :generation, :height, :weight, :type1, :type2)
   `);

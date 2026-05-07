@@ -16,17 +16,48 @@ export type Pokemon = {
   type2: PokemonType | null,
 };
 
-export type Guess = { pokemon_id: number, mask: number };
-export type GuessResult = { mask: number, remaining_guesses: number, pokemon_id: number };
-
-export type GameState = { guesses: Guess[], remaining_guesses: number };
-
-export type GameStatus = "playing" | "won" | "lost"
-
-export type DBUser = {
+export type User = {
   id: number,
+  username: string,
+  passhash: string,
+  created_at: number,
+};
+
+export type Player = {
+  id: number,
+  favorite_pokemon_id: number,
+};
+
+export type Registration = {
+  username: string,
+  passhash: string,
+  favorite_pokemon_id: number;
+};
+
+export type Credentials = {
   username: string,
   passhash: string,
 };
 
-export type User = Omit<DBUser, "passhash">;
+export type Profile = {
+  id: number,
+  username: string,
+  favorite_pokemon_id: number,
+  wins: 0,
+  losses: 0,
+};
+
+export type GuessResult = {
+  mask: number;
+  remaining: number;
+};
+
+export type GuessMade = {
+  mask: number;
+  pokemon_id: number;
+};
+
+export type GameState = {
+  guesses: GuessMade[],
+  remaining: number,
+};

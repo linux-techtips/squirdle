@@ -1,25 +1,24 @@
 {
-  "name": "bun-react-template",
-  "version": "0.1.0",
-  "private": true,
+  "name": "squirdle-impl",
+  "module": "index.ts",
   "type": "module",
+  "private": true,
   "scripts": {
-    "dev": "NODE_ENV='development' bun --hot src/server/index.ts",
-    "bundle": "bun build ./src/server/index.ts --outdir=dist --sourcemap --target=bun --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*'",
-    "compile": "bun build ./src/server/index.ts --compile --bytecode --outfile=squirdle --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*'",
-    "spritesheet": "bun run ./scripts/spritesheet.ts",
-    "db:migrate": "bun run ./scripts/migrate.ts",
-    "db:seed": "bun run ./scripts/seed.ts"
-  },
-  "dependencies": {
-    "@picocss/pico": "^2.1.1",
-    "react": "^19",
-    "react-dom": "^19"
+    "dev": "bun run --hot src",
+    "db:init": "bun run scripts/init.script"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "react-scan": "^0.5.3"
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react-scan": "^0.5.6"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@picocss/pico": "^2.1.1",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
   }
 }

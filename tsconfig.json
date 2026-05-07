@@ -21,6 +21,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
+    // Import Resolution
     "baseUrl": ".",
     "paths": {
       "@/*": [
@@ -33,7 +34,7 @@
     "noPropertyAccessFromIndexSignature": false
   },
   "exclude": [
-    "dist",
+    "out",
     "node_modules"
   ]
 }
