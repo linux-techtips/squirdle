@@ -87,6 +87,10 @@ export function serve(app: App, hostname: string, index: Bun.HTMLBundle): Bun.Se
   return Bun.serve({
     development: Bun.env.NODE_ENV === "development",
     hostname,
+    error(e) {
+      tracing.error(app.tracer, `${e.message}`, e);
+      return Response.json({ error: "something went wrong" }, { status: 500 });
+    },
     routes: {
       "/api/health": {
         GET: async () => {

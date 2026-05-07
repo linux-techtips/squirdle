@@ -19,24 +19,33 @@ export type Capture = (skip?: Function) => Source | undefined;
 export type Level = typeof LEVEL[keyof typeof LEVEL];
 export type Event = { message: string, date: Date, source?: Source };
 
-export type Pub = (level: Level, message: string, capture: Capture) => void;
+export type Pub = (level: Level, message: string, error?: Error) => void;
 export type Sub = (subscriber: Subscriber) => () => void;
 export type Tracer = readonly [pub: Pub, sub: Sub];
 
 export function tracer(): Tracer {
-  const subscribers = new Set<((level: Level, event: Event) => void)>();
+  const subscribers = new Set<Subscriber>();
 
-  function sub(subscriber: (level: Level, event: Event) => void): () => void {
+  function sub(subscriber: Subscriber): () => void {
     subscribers.add(subscriber);
     return () => subscribers.delete(subscriber);
   }
 
-  function pub(level: Level, message: string, capture: Capture = default_capture) {
-    const event: Event = { message, date: new Date(), source: capture(pub) };
+  function pub(level: Level, message: string, error?: Error) {
+    const source = error
+      ? parse_trace(error.stack ?? "")
+      : capture_here(pub);
+    const event: Event = { message, date: new Date(), source };
     for (const subscriber of subscribers) subscriber(level, event);
   }
 
   return [pub, sub] as const;
+}
+
+function capture_here(skip: Function): Source | undefined {
+  const into: { stack?: string } = {};
+  Error.captureStackTrace(into, skip);
+  return parse_trace(into.stack ?? "");
 }
 
 const PUB = 0 as const;
@@ -46,24 +55,20 @@ export function subscribe(tracer: Tracer, subscriber: (level: Level, event: Even
   return tracer[SUB](subscriber);
 }
 
-export function trace(tracer: Tracer, message: string, capture: Capture = default_capture): void {
-  return tracer[PUB](LEVEL.TRACE, message, capture);
+export function trace(tracer: Tracer, message: string, error?: Error): void {
+  return tracer[PUB](LEVEL.TRACE, message, error);
 }
-
-export function debug(tracer: Tracer, message: string, capture: Capture = default_capture): void {
-  return tracer[PUB](LEVEL.DEBUG, message, capture);
+export function debug(tracer: Tracer, message: string, error?: Error): void {
+  return tracer[PUB](LEVEL.DEBUG, message, error);
 }
-
-export function info(tracer: Tracer, message: string, capture: Capture = default_capture): void {
-  return tracer[PUB](LEVEL.INFO, message, capture);
+export function info(tracer: Tracer, message: string, error?: Error): void {
+  return tracer[PUB](LEVEL.INFO, message, error);
 }
-
-export function warn(tracer: Tracer, message: string, capture: Capture = default_capture): void {
-  return tracer[PUB](LEVEL.WARN, message, capture);
+export function warn(tracer: Tracer, message: string, error?: Error): void {
+  return tracer[PUB](LEVEL.WARN, message, error);
 }
-
-export function error(tracer: Tracer, message: string, capture: Capture = default_capture): void {
-  return tracer[PUB](LEVEL.ERROR, message, capture);
+export function error(tracer: Tracer, message: string, error?: Error): void {
+  return tracer[PUB](LEVEL.ERROR, message, error);
 }
 
 export interface TracerInterface {

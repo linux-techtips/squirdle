@@ -177,9 +177,15 @@ export namespace Squirdle {
       const controller = new AbortController();
 
       fetch("/api/game", { method: "POST", signal: controller.signal })
-        .then(r => r.ok ? r.json() : null)
+        .then(r => {
+          if (r.ok) return r.json();
+          auth.signOut();
+          return null;
+        })
         .then(state => setState(state))
-        .catch(_ => { if (controller.signal.aborted) return });
+        .catch(_ => {
+          if (controller.signal.aborted) return;
+        });
 
       return () => controller.abort();
     }, [auth.state]);
