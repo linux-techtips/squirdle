@@ -9,8 +9,9 @@ async function main() {
   const stderr = tracing.File.stderr();
 
   tracing.subscribe(app.tracer, stderr.interface());
+  tracing.debug(app.tracer, `${Bun.env.DATABASE_URL}`);
 
-  const server = App.serve(index, app);
+  const server = App.serve(app, index);
 
   tracing.info(app.tracer, `starting server on: ${server.url}`);
 }

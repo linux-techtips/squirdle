@@ -9,6 +9,7 @@ import * as db from "@/server/db";
 import pokedex from "@/pokedex.json";
 
 export type App = {
+  hostname: string,
   sqlite: db.SQLiteDatabase,
   tracer: tracing.Tracer,
   hasher: tokin.Hasher,
@@ -21,7 +22,13 @@ export function testing(clock: time.Clock, schedule: number[]): App {
   const hasher = tokin.hasher("TESTING_SECRET");
   const tracer = tracing.tracer();
 
-  const app: App = { sqlite, hasher, tracer, clock };
+  const app: App = {
+    hostname: "localhost",
+    sqlite,
+    hasher,
+    tracer,
+    clock,
+  };
 
   db.migrate(app.sqlite);
 
@@ -31,14 +38,20 @@ export function testing(clock: time.Clock, schedule: number[]): App {
   return app;
 }
 
-export function production(): App {
+export function production(hostname: string | undefined = Bun.env.HOSTNAME): App {
   const sqlite = db.open(Bun.env.DATABASE_URL!);
   const hasher = tokin.hasher(Bun.env.TOKIN_SECRET!);
   const tracer = tracing.tracer();
 
   const clock = time.Now.init().interface();
 
-  return { sqlite, hasher, tracer, clock };
+  return {
+    hostname: hostname ?? Bun.env.NODE_ENV === "development" ? "localhost" : "0.0.0.0",
+    sqlite,
+    hasher,
+    tracer,
+    clock,
+  };
 }
 
 export async function signup(app: App, registration: Omit<Registration, "passhash"> & { password: string }): Promise<Profile | null> {
@@ -117,9 +130,10 @@ export function guard(app: App, handler: (req: Request, profile: Profile) => Res
   };
 }
 
-export function serve(index: Bun.HTMLBundle, app: App): Bun.Server<undefined> {
+export function serve(app: App, index: Bun.HTMLBundle): Bun.Server<undefined> {
   return Bun.serve({
-    development: true,
+    development: Bun.env.NODE_ENV === "development",
+    hostname: app.hostname,
     routes: {
       "/api/auth/signup": {
         POST: async (req: Request) => {

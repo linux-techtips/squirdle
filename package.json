@@ -4,7 +4,11 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun run --hot src",
+    "dev": "NODE_ENV=development bun run --hot src",
+    "bundle": "NODE_ENV=production bun build src --env inline --target bun --outdir out --production --minify",
+    "bundle:clean": "bun clean && bun bundle",
+    "serve": "NODE_ENV=production bun run --cwd out src",
+    "clean": "rm -fr out",
     "db:init": "bun run scripts/init.script"
   },
   "devDependencies": {

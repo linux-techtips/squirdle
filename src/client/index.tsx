@@ -1,7 +1,5 @@
 import type { Profile, GameState, GuessResult } from "@/types";
 
-// NOTE: react-scan MUST be imported before react.
-import { scan } from "react-scan";
 import { createRoot } from "react-dom/client";
 
 import * as tokin from "@/lib/tokin/client";
@@ -249,6 +247,3 @@ if (import.meta.hot) {
   createRoot(document.body).render(app);
 }
 
-if (process.env.NODE_ENV === "development") {
-  scan({ enabled: true });
-}
