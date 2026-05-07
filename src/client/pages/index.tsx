@@ -5,4 +5,4 @@ export { default as Settings } from "./Settings";
 export { default as Pokedex } from "./Pokedex";
 export { default as SignUp } from "./SignUp";
 export { default as SignIn } from "./SignIn";
-
+export { default as Dev } from "./Dev";

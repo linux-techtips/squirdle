@@ -1,25 +1,14 @@
+import type { Profile, GameState, GuessResult } from "@/types";
+
+// NOTE: react-scan MUST be imported before react.
 import { scan } from "react-scan";
 import { createRoot } from "react-dom/client";
 
-import * as React from "react";
-
-import type { Profile, GameState, GuessResult } from "@/types";
-
 import * as tokin from "@/lib/tokin/client";
 import * as pages from "@/client/pages";
+import * as React from "react";
 
 import "./style.css";
-
-export function useDebounce<T>(delay: number, value: T): T {
-  const [debounced, setDebounced] = React.useState(value);
-
-  React.useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-
-  return debounced;
-}
 
 export namespace Router {
   type RouteComponent = (props?: any) => React.ReactNode;
@@ -226,6 +215,9 @@ const routes = {
   "/profile": pages.Profilescreen,
   "/pokedex": pages.Pokedex,
   "/game": pages.Gamescreen,
+  "/signup": pages.SignUp,
+  "/signin": pages.SignIn,
+  "/dev": pages.Dev,
   "/": pages.Homescreen,
 } as const;
 

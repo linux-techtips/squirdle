@@ -162,14 +162,9 @@ body {
   border-radius: 16px;
   padding: 20px;
   text-align: center;
-}
-
-.pokemon-sprite {
-  width: 96px;
-  height: 96px;
-  margin: 0 auto 12px;
-  background-repeat: no-repeat;
-  image-rendering: pixelated;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .pokemon-card h2 {
@@ -207,7 +202,8 @@ body {
 .setting-row input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #0d6efd; /* nice blue */
+  accent-color: #0d6efd;
+  /* nice blue */
   cursor: pointer;
 }
 
@@ -246,11 +242,11 @@ body {
   transition: 0.3s;
 }
 
-.switch input:checked + .slider {
+.switch input:checked+.slider {
   background-color: #0d6efd;
 }
 
-.switch input:checked + .slider::before {
+.switch input:checked+.slider::before {
   transform: translateX(26px);
 }
 
