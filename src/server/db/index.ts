@@ -3,7 +3,7 @@ export type { SQLiteDatabase };
 
 import type { GameState, GuessResult, GuessMade, Pokemon, Profile, User, Registration } from "@/types";
 
-import type { App } from "@/server/app";
+import type { App } from "@/server";
 
 import schema from "./schema.sql" with { type: "text" };
 
@@ -151,9 +151,23 @@ export function search_profiles({ sqlite }: App, query: string, limit: number = 
     FROM users_fts AS fts
     JOIN players AS player ON player.id = fts.rowid
     JOIN profiles AS profile ON profile.id = player.id
-    WHERE users_fts MATCH ?
+    WHERE users_fts MATCH :0
     ORDER BY rank
-    LIMIT ?;
+    LIMIT :1;
+  `).all(query, limit);
+}
+
+export function search_pokemon({ sqlite }: App, query: string, limit: number = 20): Pokemon[] {
+  const fts_query = build_fts_query(query);
+  if (fts_query === null) return [];
+
+  return sqlite.query<Pokemon, [string, number]>(`
+    SELECT pokemon.*
+    FROM pokemon_fts AS fts
+    JOIN pokemon ON pokemon.id = fts.rowid
+    WHERE pokemon_fts MATCH :0
+    ORDER BY rank
+    LIMIT :1;
   `).all(query, limit);
 }
 

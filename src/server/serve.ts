@@ -1,58 +1,11 @@
-import type { Pokemon, Profile, Registration } from "@/types";
+import type { Profile, Registration } from "@/types";
 import type { BunRequest as Request } from "bun";
 
 import * as tracing from "@/lib/tracing";
 import * as tokin from "@/lib/tokin";
-import * as time from "@/lib/time";
 import * as db from "@/server/db";
 
-import pokedex from "@/pokedex.json";
-
-export type App = {
-  hostname: string,
-  sqlite: db.SQLiteDatabase,
-  tracer: tracing.Tracer,
-  hasher: tokin.Hasher,
-  clock: time.Clock,
-};
-
-export function testing(clock: time.Clock, schedule: number[]): App {
-  const sqlite = db.open(":memory:");
-
-  const hasher = tokin.hasher("TESTING_SECRET");
-  const tracer = tracing.tracer();
-
-  const app: App = {
-    hostname: "localhost",
-    sqlite,
-    hasher,
-    tracer,
-    clock,
-  };
-
-  db.migrate(app.sqlite);
-
-  db.seed_pokemon(app, pokedex as Pokemon[]);
-  db.seed_schedule(app, schedule);
-
-  return app;
-}
-
-export function production(hostname: string | undefined = Bun.env.HOSTNAME): App {
-  const sqlite = db.open(Bun.env.DATABASE_URL!);
-  const hasher = tokin.hasher(Bun.env.TOKIN_SECRET!);
-  const tracer = tracing.tracer();
-
-  const clock = time.Now.init().interface();
-
-  return {
-    hostname: hostname ?? Bun.env.NODE_ENV === "development" ? "localhost" : "0.0.0.0",
-    sqlite,
-    hasher,
-    tracer,
-    clock,
-  };
-}
+import type { App } from ".";
 
 export async function signup(app: App, registration: Omit<Registration, "passhash"> & { password: string }): Promise<Profile | null> {
   return db.register(app, { ...registration, passhash: await Bun.password.hash(registration.password) });
@@ -130,10 +83,10 @@ export function guard(app: App, handler: (req: Request, profile: Profile) => Res
   };
 }
 
-export function serve(app: App, index: Bun.HTMLBundle): Bun.Server<undefined> {
+export function serve(app: App, hostname: string, index: Bun.HTMLBundle): Bun.Server<undefined> {
   return Bun.serve({
     development: Bun.env.NODE_ENV === "development",
-    hostname: app.hostname,
+    hostname,
     routes: {
       "/api/health": {
         GET: async () => {

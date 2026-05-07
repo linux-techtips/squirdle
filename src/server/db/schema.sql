@@ -132,6 +132,33 @@ BEGIN
   INSERT INTO users_fts(rowid, username) VALUES (NEW.id, NEW.username);
 END;
 
+CREATE VIRTUAL TABLE pokemon_fts USING fts5(
+  name,
+  content='pokemon',
+  content_rowid='id',
+  tokenize='trigram case_sensitive 0 remove_diacritics 1'
+);
+
+CREATE TRIGGER IF NOT EXISTS pokemon_fts_ai
+AFTER INSERT ON pokemon
+BEGIN
+  INSERT INTO pokemon_fts(rowid, name) VALUES (NEW.id, NEW.name);
+END;
+
+CREATE TRIGGER IF NOT EXISTS pokemon_fts_ad
+AFTER DELETE ON pokemon
+BEGIN
+  INSERT INTO pokemon_fts(pokemon_fts, rowid, name) VALUES ('delete', OLD.id, OLD.name);
+END;
+
+CREATE TRIGGER IF NOT EXISTS pokemon_fts_au
+AFTER UPDATE OF pokemon ON users
+BEGIN
+  INSERT INTO pokemon_fts(pokemon_fts, rowid, name) VALUES ('delete', OLD.id, OLD.name);
+  INSERT INTO pokemon_fts(rowid, name) VALUES (NEW.id, NEW.name);
+END;
+
+
 CREATE TRIGGER IF NOT EXISTS create_player_registration
 INSTEAD OF INSERT ON registrations
 BEGIN

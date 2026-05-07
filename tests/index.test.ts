@@ -1,113 +1,109 @@
-import { describe, it, expect } from "bun:test";
-import * as db from "@/server/db";
-import * as App from "@/server/app";
-import { Day } from "@/lib/time";
+import type { Registration } from "@/types";
 
-const SCHEDULE = [1, 2, 3];
+import * as testing from "bun:test";
+import * as time from "@/lib/time";
+import * as db from "@/server/db";
+
+import { App } from "@/server";
+
 const TODAY_POKEMON = 1;
 const TOMORROW_POKEMON = 2;
 
-function makeApp(clock: Day) {
-  return App.testing(clock.interface(), SCHEDULE);
+function init(clock: time.Clock = time.Now.init().interface()): App {
+  return App.testing(clock, [TODAY_POKEMON, TOMORROW_POKEMON]);
 }
 
-function makeRegistration(username = "ash") {
-  return {
-    username,
-    passhash: "hashed_password",
-    favorite_pokemon_id: 25,
-  };
-}
+const REGISTRATION: Registration = {
+  favorite_pokemon_id: 25,
+  username: "Ash",
+  passhash: "123",
+};
 
-describe("register", () => {
-  it("creates entries in users, players, and player_stats", () => {
-    const clock = Day.init();
-    const app = makeApp(clock);
-    const reg = makeRegistration();
+testing.describe("register", () => {
+  testing.it("creates entries in users, players, and player_stats", () => {
+    const app = init();
 
-    const profile = db.register(app, reg);
+    const profile = db.register(app, REGISTRATION);
 
-    expect(profile).not.toBeNull();
-    expect(profile!.username).toBe(reg.username);
+    testing.expect(profile).not.toBeNull();
+    testing.expect(profile!.username).toBe(REGISTRATION.username);
 
     const user = app.sqlite.query("SELECT * FROM users WHERE id = ?").get(profile!.id);
-    expect(user).not.toBeNull();
+    testing.expect(user).not.toBeNull();
 
     const player = app.sqlite.query("SELECT * FROM players WHERE id = ?").get(profile!.id);
-    expect(player).not.toBeNull();
+    testing.expect(player).not.toBeNull();
 
     const stats = app.sqlite
       .query("SELECT * FROM player_stats WHERE player_id = ?")
       .get(profile!.id) as any;
-    expect(stats).not.toBeNull();
-    expect(stats.wins).toBe(0);
-    expect(stats.losses).toBe(0);
-    expect(stats.win_streak).toBe(0);
+
+    testing.expect(stats).not.toBeNull();
+    testing.expect(stats.wins).toBe(0);
+    testing.expect(stats.losses).toBe(0);
+    testing.expect(stats.win_streak).toBe(0);
+    testing.expect(stats.max_win_streak).toBe(0);
   });
 
-  it("returns null when username already exists", () => {
-    const clock = Day.init();
-    const app = makeApp(clock);
-    const reg = makeRegistration();
+  testing.it("returns null when username already exists", () => {
+    const app = init();
 
-    db.register(app, reg);
-    const duplicate = db.register(app, reg);
+    db.register(app, REGISTRATION);
+    const duplicate = db.register(app, REGISTRATION);
 
-    expect(duplicate).toBeNull();
+    testing.expect(duplicate).toBeNull();
   });
 });
 
-describe("delete_user", () => {
-  it("deletes corresponding entries in users, players, and player_stats", () => {
-    const clock = Day.init();
-    const app = makeApp(clock);
-    const profile = db.register(app, makeRegistration())!;
+testing.describe("delete_user", () => {
+  testing.it("deletes corresponding entries in users, players, and player_stats", () => {
+    const app = init();
+    const profile = db.register(app, REGISTRATION)!;
 
     const deleted = db.delete_user(app, profile.id);
-    expect(deleted).toBe(true);
+    testing.expect(deleted).toBe(true);
 
     const user = app.sqlite.query("SELECT * FROM users WHERE id = ?").get(profile.id);
-    expect(user).toBeNull();
+    testing.expect(user).toBeNull();
 
     // Cascade should remove player and player_stats too.
     const player = app.sqlite.query("SELECT * FROM players WHERE id = ?").get(profile.id);
-    expect(player).toBeNull();
+    testing.expect(player).toBeNull();
 
     const stats = app.sqlite
       .query("SELECT * FROM player_stats WHERE player_id = ?")
       .get(profile.id);
-    expect(stats).toBeNull();
+
+    testing.expect(stats).toBeNull();
   });
 
-  it("returns false when user does not exist", () => {
-    const clock = Day.init();
-    const app = makeApp(clock);
+  testing.it("returns false when user does not exist", () => {
+    const app = init();
 
     const result = db.delete_user(app, 99999);
-    expect(result).toBe(false);
+    testing.expect(result).toBe(false);
   });
 });
 
-describe("start_or_get_game", () => {
-  it("inserts a new game with today's scheduled pokemon", () => {
-    const clock = Day.init();
-    const app = makeApp(clock);
-    const profile = db.register(app, makeRegistration())!;
+testing.describe("start_or_get_game", () => {
+  testing.it("inserts a new game with today's scheduled pokemon", () => {
+    const app = init();
+    const profile = db.register(app, REGISTRATION)!;
 
     const state = db.start_or_get_game(app, profile.id);
-    expect(state).not.toBeNull();
+    testing.expect(state).not.toBeNull();
 
     const game = app.sqlite
       .query("SELECT * FROM games WHERE player_id = ?")
       .get(profile.id) as any;
-    expect(game).not.toBeNull();
-    expect(game.pokemon_id).toBe(TODAY_POKEMON);
+    testing.expect(game).not.toBeNull();
+    testing.expect(game.pokemon_id).toBe(TODAY_POKEMON);
   });
 
-  it("does not update the game when called again on the same day", () => {
-    const clock = Day.init();
-    const app = makeApp(clock);
-    const profile = db.register(app, makeRegistration())!;
+  testing.it("does not update the game when called again on the same day", () => {
+    const app = init();
+
+    const profile = db.register(app, REGISTRATION)!;
 
     db.start_or_get_game(app, profile.id);
 
@@ -118,36 +114,35 @@ describe("start_or_get_game", () => {
     db.start_or_get_game(app, profile.id);
     const stateAfter = db.game_state(app, profile.id)!;
 
-    expect(stateAfter.guesses.length).toBe(stateBefore.guesses.length);
+    testing.expect(stateAfter.guesses.length).toBe(stateBefore.guesses.length);
   });
 
-  it("updates pokemon_id and clears guesses when started on a new day", () => {
-    const clock = Day.init();
-    const app = makeApp(clock);
-    const profile = db.register(app, makeRegistration())!;
+  testing.it("updates pokemon_id and clears guesses when started on a new day", () => {
+    const day = time.Day.init();
+    const app = init(day.interface());
+    const profile = db.register(app, REGISTRATION)!;
 
     db.start_or_get_game(app, profile.id);
     db.make_guess(app, profile.id, 4);
 
     // Advance to the next day and start a new game.
-    clock.advance(1);
+    day.advance(1);
     db.start_or_get_game(app, profile.id);
 
     const game = app.sqlite
       .query("SELECT * FROM games WHERE player_id = ?")
       .get(profile.id) as any;
-    expect(game.pokemon_id).toBe(TOMORROW_POKEMON);
+    testing.expect(game.pokemon_id).toBe(TOMORROW_POKEMON);
 
     const state = db.game_state(app, profile.id)!;
-    expect(state.guesses.length).toBe(0);
+    testing.expect(state.guesses.length).toBe(0);
   });
 });
 
-describe("player_stats updates via trigger", () => {
-  it("increments wins and win_streak when a game is won", () => {
-    const clock = Day.init();
-    const app = makeApp(clock);
-    const profile = db.register(app, makeRegistration())!;
+testing.describe("player_stats updates via trigger", () => {
+  testing.it("increments wins and win_streak when a game is won", () => {
+    const app = init();
+    const profile = db.register(app, REGISTRATION)!;
 
     db.start_or_get_game(app, profile.id);
     db.make_guess(app, profile.id, TODAY_POKEMON); // Correct guess → win.
@@ -156,15 +151,14 @@ describe("player_stats updates via trigger", () => {
       .query("SELECT * FROM player_stats WHERE player_id = ?")
       .get(profile.id) as any;
 
-    expect(stats.wins).toBe(1);
-    expect(stats.losses).toBe(0);
-    expect(stats.win_streak).toBe(1);
+    testing.expect(stats.wins).toBe(1);
+    testing.expect(stats.losses).toBe(0);
+    testing.expect(stats.win_streak).toBe(1);
   });
 
-  it("increments losses and resets win_streak when a game is lost", () => {
-    const clock = Day.init();
-    const app = makeApp(clock);
-    const profile = db.register(app, makeRegistration())!;
+  testing.it("increments losses and resets win_streak when a game is lost", () => {
+    const app = init();
+    const profile = db.register(app, REGISTRATION)!;
 
     // Give the game a low max_guess_count so we can exhaust it quickly.
     app.sqlite.run("UPDATE games SET max_guess_count = 1 WHERE player_id = ?", [profile.id]);
@@ -187,45 +181,42 @@ describe("player_stats updates via trigger", () => {
       .query("SELECT * FROM player_stats WHERE player_id = ?")
       .get(profile.id) as any;
 
-    expect(stats.losses).toBe(1);
-    expect(stats.wins).toBe(0);
-    expect(stats.win_streak).toBe(0);
-    expect(stats.max_win_streak).toBe(3);
+    testing.expect(stats.losses).toBe(1);
+    testing.expect(stats.wins).toBe(0);
+    testing.expect(stats.win_streak).toBe(0);
+    testing.expect(stats.max_win_streak).toBe(3);
   });
 });
 
-describe("search_profiles", () => {
-  it("returns matching profiles by username", () => {
-    const clock = Day.init();
-    const app = makeApp(clock);
+testing.describe("search_profiles", () => {
+  testing.it("returns matching profiles by username", () => {
+    const app = init();
 
-    db.register(app, makeRegistration("pikachu"));
-    db.register(app, makeRegistration("pikablu"));
-    db.register(app, makeRegistration("mewtwo"));
+    db.register(app, { username: "pikachu", passhash: "123", favorite_pokemon_id: 69 });
+    db.register(app, { username: "pikablu", passhash: "123", favorite_pokemon_id: 69 });
+    db.register(app, { username: "mewtwo", passhash: "123", favorite_pokemon_id: 69 });
 
     const results = db.search_profiles(app, "pika");
+    testing.expect(results.length).toBe(2);
 
-    expect(results.length).toBe(2);
     const usernames = results.map((p) => p.username);
-    expect(usernames).toContain("pikachu");
-    expect(usernames).toContain("pikablu");
+    testing.expect(usernames).toContain("pikachu");
+    testing.expect(usernames).toContain("pikablu");
   });
 
-  it("returns an empty array for a short query", () => {
-    const clock = Day.init();
-    const app = makeApp(clock);
-    db.register(app, makeRegistration("ash"));
+  testing.it("returns an empty array for a short query", () => {
+    const app = init();
+    db.register(app, REGISTRATION);
 
     const results = db.search_profiles(app, "as"); // < 3 chars
-    expect(results).toEqual([]);
+    testing.expect(results).toEqual([]);
   });
 
-  it("returns an empty array when no profiles match", () => {
-    const clock = Day.init();
-    const app = makeApp(clock);
-    db.register(app, makeRegistration("brock"));
+  testing.it("returns an empty array when no profiles match", () => {
+    const app = init();
+    db.register(app, { username: "brock", passhash: "123", favorite_pokemon_id: 69 });
 
     const results = db.search_profiles(app, "misty");
-    expect(results).toEqual([]);
+    testing.expect(results).toEqual([]);
   });
 });
