@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar.tsx";
 import { Router } from "@/client";
+import { useEffect, useRef, useState } from "react";
+import bgMusic from "../assets/music/background.mp3";
+
 
 export default function Settings() {
   const router = Router.use();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [musicOn, setMusicOn] = useState(false);
   const [volume, setVolume] = useState(50);
 
   const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("theme") !== "light";
+    return localStorage.getItem("theme") === "dark";
   });
 
   useEffect(() => {
@@ -24,6 +28,23 @@ export default function Settings() {
     }
   }, [darkMode]);
 
+    useEffect(() => {
+    if (!audioRef.current) return;
+
+    if (musicOn) {
+      audioRef.current.volume = volume / 100;
+      audioRef.current.play();
+    } else {
+      audioRef.current.pause();
+    }
+  }, [musicOn]);
+
+  useEffect(() => {
+    if (!audioRef.current) return;
+
+    audioRef.current.volume = volume / 100;
+  }, [volume]);
+
   return (
     <>
       <Navbar
@@ -34,6 +55,7 @@ export default function Settings() {
       />
 
       <main className="page">
+        <audio ref={audioRef} src={bgMusic} loop />
         <section className="card settings-card">
           <h1 className="title">Settings</h1>
 
