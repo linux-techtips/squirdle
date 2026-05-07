@@ -3,11 +3,23 @@ import { createRoot } from "react-dom/client";
 
 import * as React from "react";
 
-import type { GameState, GuessResult, Profile } from "@/types";
+import type { Profile, GameState, GuessResult } from "@/types";
+
 import * as tokin from "@/lib/tokin/client";
-import { SignUp, SignIn, Profile as ProfileComponent, Game, App } from "@/client/components/App";
+import * as pages from "@/client/pages";
 
 import "./style.css";
+
+export function useDebounce<T>(delay: number, value: T): T {
+  const [debounced, setDebounced] = React.useState(value);
+
+  React.useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+
+  return debounced;
+}
 
 export namespace Router {
   type RouteComponent = (props?: any) => React.ReactNode;
@@ -210,11 +222,11 @@ export namespace Squirdle {
 };
 
 const routes = {
-  "/profile": ProfileComponent,
-  "/signup": SignUp,
-  "/signin": SignIn,
-  "/game": Game,
-  "/": App,
+  "/settings": pages.Settings,
+  "/profile": pages.Profilescreen,
+  "/pokedex": pages.Pokedex,
+  "/game": pages.Gamescreen,
+  "/": pages.Homescreen,
 } as const;
 
 const app = (
@@ -222,7 +234,7 @@ const app = (
     <Auth.Provider>
       <Squirdle.Provider>
         <Router.Provider routes={routes}>
-          <App />
+          <pages.Homescreen />
         </Router.Provider>
       </Squirdle.Provider>
     </Auth.Provider>
