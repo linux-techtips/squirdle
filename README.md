@@ -3,8 +3,7 @@
 Migrate and Seed the database:
 
 ```bash
-bun db:migrate
-bun db:seed src/pokedex.json
+bun db:init
 ```
 
 Start the server for development:

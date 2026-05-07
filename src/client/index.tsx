@@ -3,9 +3,9 @@ import { createRoot } from "react-dom/client";
 
 import * as React from "react";
 
-import { SignIn, SignUp, Game, App } from "./components/App";
-import * as tokin from "@/tokin/client";
-import type { GameState, GuessResult } from "@/types";
+import type { GameState, GuessResult, Profile } from "@/types";
+import * as tokin from "@/lib/tokin/client";
+import { SignUp, SignIn, Profile as ProfileComponent, Game, App } from "@/client/components/App";
 
 import "./style.css";
 
@@ -33,7 +33,7 @@ export namespace Router {
 
   export const Context = React.createContext<Context>(undefined as any);
 
-  export function use() {
+  export function use(): Context {
     return React.use(Context);
   }
 
@@ -59,6 +59,8 @@ export namespace Router {
 
     const Route = routes[state.path];
 
+    if (Route === undefined) window.location.pathname = "/";
+
     return (
       <Context.Provider value={{ navigate: navigate as NavigateFn<RegisteredRoutes> }}>
         <React.Suspense>
@@ -81,23 +83,22 @@ export namespace Router {
 };
 
 export namespace Auth {
-  type User = { username: string, id: number };
-
   export type Context = {
-    state: User | null,
+    state: Profile | null,
     isSignedIn(): boolean,
+    signOut(): Promise<void>,
     signIn(body: FormData): Promise<Response>,
     signUp(body: FormData): Promise<Response>,
   };
 
   export const Context = React.createContext<Context>(undefined as any);
 
-  export function use() {
+  export function use(): Context {
     return React.use(Context);
   }
 
   export function Provider({ children }: { children: React.ReactNode }) {
-    const readState = (): User | null => {
+    const readState = (): Profile | null => {
       const token = (
         document.cookie
           .split(";")
@@ -106,7 +107,7 @@ export namespace Auth {
       );
       if (!token) return null;
 
-      return tokin.read<User>(token);
+      return tokin.read<Profile>(token);
     };
 
     const [state, setState] = React.useState(readState());
@@ -121,6 +122,10 @@ export namespace Auth {
 
     const context: Context = {
       isSignedIn: () => state !== null,
+      signOut: async () => {
+        await window.cookieStore.delete("primary-token");
+        setState(null);
+      },
       signUp: (body) => submit("/api/auth/signup", body),
       signIn: (body) => submit("/api/auth/signin", body),
       state,
@@ -140,75 +145,76 @@ export namespace Auth {
 
 export namespace Squirdle {
   export type Status = "loading" | "playing" | "won" | "lost";
+
   export type Context = {
-    state: GameState | null,
     status: Status,
-    guess(body: FormData): Promise<void>,
+    state: GameState | null,
+    guess(pokemon_id: number): Promise<void>,
   };
 
   export const Context = React.createContext<Context>(undefined as any);
 
-  export function use() {
+  export function use(): Context {
     return React.use(Context);
   }
 
   export function Provider({ children }: { children: React.ReactNode }) {
     const auth = Auth.use();
 
-    const [loading, setLoading] = React.useState<boolean>(false);
     const [state, setState] = React.useState<GameState | null>(null);
 
     React.useEffect(() => {
-      if (!auth.isSignedIn()) {
-        setState(null);
-        return;
-      }
+      if (!auth.isSignedIn()) return;
 
-      let cancelled = false;
-      setLoading(true);
+      const controller = new AbortController();
 
-      fetch("/api/game", { method: "POST" })
-        .then(async r => r.ok ? await r.json() as null : null)
-        .then(data => { if (!cancelled) setState(data); })
-        .catch(() => { if (!cancelled) setState(null); })
-        .finally(() => { if (!cancelled) setLoading(false); });
+      fetch("/api/game", { method: "POST", signal: controller.signal })
+        .then(r => r.ok ? r.json() : null)
+        .then(state => setState(state))
+        .catch(_ => { if (controller.signal.aborted) return });
 
-      return () => { cancelled = true };
+      return () => controller.abort();
     }, [auth.state]);
 
-    const status: Status = (() => {
-      if (loading) return "loading";
-      if (state?.guesses.at(-1)?.mask === 0) return "won";
-      if (state?.remaining_guesses === 0) return "lost";
+    const guess = React.useCallback(async (pokemon_id: number) => {
+      const resp = await fetch(`/api/guess/${pokemon_id}`, { method: "POST" });
+      const result: GuessResult = await resp.json();
+
+      setState(prev => prev ? {
+        guesses: [...prev.guesses ?? [], { mask: result.mask, pokemon_id }],
+        remaining: result.remaining,
+      } : prev);
+    }, []);
+
+    const status = (() => {
+      if (state === null) return "loading";
+
+      const last = state.guesses.at(-1);
+      if (last?.mask === 0) return "won";
+      if (state.remaining === 0) return "lost";
 
       return "playing";
     })();
 
-    const guess = async (body: FormData) => {
-      const resp = await fetch("/api/guess", { method: "POST", body });
-      if (!resp.ok) return;
-
-      const result = await resp.json() as GuessResult;
-
-      setState(prev => prev ? {
-        guesses: [...prev.guesses, { mask: result.mask, pokemon_id: result.pokemon_id }],
-        remaining_guesses: result.remaining_guesses,
-      } : prev);
-    };
+    const value = React.useMemo<Context>(
+      () => ({ status, state, guess }),
+      [state, guess],
+    );
 
     return (
-      <Context.Provider value={{ state, status, guess }}>
+      <Context.Provider value={value}>
         {children}
       </Context.Provider>
-    )
+    );
   }
-}
+};
 
 const routes = {
-  "/": App,
-  "/game": Game,
+  "/profile": ProfileComponent,
   "/signup": SignUp,
   "/signin": SignIn,
+  "/game": Game,
+  "/": App,
 } as const;
 
 const app = (
@@ -233,9 +239,3 @@ if (import.meta.hot) {
 if (process.env.NODE_ENV === "development") {
   scan({ enabled: true });
 }
-
-// declare global {
-//   namespace Router {
-//     interface Register { routes: typeof routes }
-//   }
-// }
