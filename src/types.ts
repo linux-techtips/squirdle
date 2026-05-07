@@ -47,7 +47,8 @@ export type Profile = {
   favorite_pokemon_id: number,
   wins: number,
   losses: number,
-  win_sreak: number,
+  win_streak: number,
+  max_win_streak: number,
 };
 
 export type GuessResult = {

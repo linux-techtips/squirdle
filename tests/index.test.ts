@@ -190,6 +190,7 @@ describe("player_stats updates via trigger", () => {
     expect(stats.losses).toBe(1);
     expect(stats.wins).toBe(0);
     expect(stats.win_streak).toBe(0);
+    expect(stats.max_win_streak).toBe(3);
   });
 });
 

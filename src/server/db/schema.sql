@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS player_stats (
   player_id INTEGER PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE,
   wins INTEGER NOT NULL DEFAULT 0 CHECK (wins >= 0),
   losses INTEGER NOT NULL DEFAULT 0 CHECK (losses >= 0),
-  win_streak INTEGER NOT NULL DEFAULT 0 CHECK (win_streak >= 0)
+  win_streak INTEGER NOT NULL DEFAULT 0 CHECK (win_streak >= 0),
+  max_win_streak INTEGER NOT NULL DEFAULT 0 CHECK (max_win_streak >= 0)
 ) STRICT;
 
 CREATE TABLE IF NOT EXISTS games (
@@ -54,7 +55,8 @@ SELECT
   player.favorite_pokemon_id,
   stats.wins AS wins,
   stats.losses AS losses,
-  stats.win_streak as win_streak
+  stats.win_streak AS win_streak,
+  stats.max_win_streak AS max_win_streak
 FROM users AS user
 JOIN players AS player ON player.id = user.id
 JOIN player_stats AS stats ON stats.player_id = player.id;
@@ -157,7 +159,8 @@ BEGIN
   UPDATE player_stats SET
     wins = wins + state.won,
     losses = losses + state.lost,
-    win_streak = win_streak + state.won - (win_streak * state.lost)
+    win_streak = win_streak + state.won - (win_streak * state.lost),
+    max_win_streak = MAX(win_streak, max_win_streak)
   FROM (
     SELECT
       CAST(NEW.pokemon_id = game.pokemon_id AS INTEGER) AS won,
