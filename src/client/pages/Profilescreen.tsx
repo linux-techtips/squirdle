@@ -1,4 +1,4 @@
-import Navbar from "../components/Navbar.tsx";
+import { Navbar } from "@/client/components";
 import { Router } from "@/client";
 
 export default function Profile() {

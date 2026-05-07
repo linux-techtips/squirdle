@@ -1,18 +1,19 @@
-import { useEffect, useState } from "react";
-import Navbar from "../components/Navbar.tsx";
+import { Navbar } from "@/client/components";
 import { Router } from "@/client";
+
+import * as React from "react";
 
 export default function Settings() {
   const router = Router.use();
 
-  const [musicOn, setMusicOn] = useState(false);
-  const [volume, setVolume] = useState(50);
+  const [musicOn, setMusicOn] = React.useState(false);
+  const [volume, setVolume] = React.useState(50);
 
-  const [darkMode, setDarkMode] = useState(() => {
+  const [darkMode, setDarkMode] = React.useState(() => {
     return localStorage.getItem("theme") !== "light";
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (darkMode) {
       document.body.classList.remove("light-mode");
       document.body.classList.add("dark-mode");

@@ -3,8 +3,9 @@ export type { SQLiteDatabase };
 
 import type { GameState, GuessResult, GuessMade, Pokemon, Profile, User, Registration } from "@/types";
 
-import schema from "@/schema.sql" with { type: "text" };
 import type { App } from "@/server/app";
+
+import schema from "./schema.sql" with { type: "text" };
 
 export function open(filename: string): SQLiteDatabase {
   const sqlite = SQLiteDatabase.open(filename, { strict: true });
