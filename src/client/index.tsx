@@ -113,6 +113,15 @@ export namespace Auth {
 
     const [state, setState] = React.useState(readState());
 
+    React.useEffect(() => {
+      const listener = (event: CookieChangeEvent) => {
+        if (event.deleted[0]?.name === "primary-token") setState(null);
+      };
+
+      window.cookieStore.addEventListener("change", listener);
+      return () => window.cookieStore.removeEventListener("change", listener);
+    }, []);
+
     const submit = async (path: string, body: FormData) => {
       const resp = await fetch(path, { method: "POST", body });
 
