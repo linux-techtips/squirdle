@@ -10,7 +10,13 @@ import schema from "./schema.sql" with { type: "text" };
 export function open(filename: string): SQLiteDatabase {
   const sqlite = SQLiteDatabase.open(filename, { strict: true });
 
-  sqlite.run(`PRAGMA FOREIGN_KEYS = ON;`);
+  sqlite.run(`
+    PRAGMA SYNCHRONOUS = NORMAL;
+    PRAGMA BUSY_TIMEOUT = 5000;
+    PRAGMA TEMP_STORE = MEMORY;
+    PRAGMA JOURNAL_MODE = WAL;
+    PRAGMA FOREIGN_KEYS = ON;
+  `);
 
   return sqlite;
 }

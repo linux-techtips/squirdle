@@ -135,6 +135,11 @@ export function serve(app: App, index: Bun.HTMLBundle): Bun.Server<undefined> {
     development: Bun.env.NODE_ENV === "development",
     hostname: app.hostname,
     routes: {
+      "/api/health": {
+        GET: async () => {
+          return new Response("Thou crawler! Thou cringer! Thou smallest of the small!");
+        },
+      },
       "/api/auth/signup": {
         POST: async (req: Request) => {
           tracing.trace(app.tracer, `${req.url}`);
