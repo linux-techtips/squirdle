@@ -21,11 +21,9 @@ export function testing(clock: time.Clock, schedule: number[]): App {
   const hasher = tokin.hasher("TESTING_SECRET");
   const tracer = tracing.tracer();
 
-  const stderr = tracing.File.stderr();
-
-  tracing.subscribe(tracer, stderr.interface());
-
   const app: App = { sqlite, hasher, tracer, clock };
+
+  db.migrate(app.sqlite);
 
   db.seed_pokemon(app, pokedex as Pokemon[]);
   db.seed_schedule(app, schedule);
@@ -66,6 +64,7 @@ export function issueAuthTokens(app: App, req: Request, profile: Profile, hasher
   const primary_payload = tokin.payload<Profile>(profile, iat, primary_exp);
   const primary_token = tokin.sign(primary_payload, app.hasher);
 
+  // TODO: (Carter) ideally, we would only store the profile id in this token. there is a solution, but this works for now.
   const refresh_payload = tokin.payload<Profile>(profile, iat, refresh_exp);
   const refresh_token = tokin.sign(refresh_payload, hasher);
 

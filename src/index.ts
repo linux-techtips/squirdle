@@ -1,5 +1,6 @@
 import * as tracing from "@/lib/tracing";
 import * as App from "@/server/app";
+
 import index from "@/client/index.html";
 
 async function main() {

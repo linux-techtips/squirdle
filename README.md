@@ -10,3 +10,9 @@ Start the server for development:
 ```bash
 bun dev
 ```
+
+Run backend tests:
+```
+bun test
+```
+```

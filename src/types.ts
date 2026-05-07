@@ -1,3 +1,5 @@
+declare module "*.sql";
+
 export const POKEMON_TYPES = [
   "normal", "fire", "water", "electric", "grass", "ice",
   "fighting", "poison", "ground", "flying", "psychic", "bug",
@@ -43,8 +45,9 @@ export type Profile = {
   id: number,
   username: string,
   favorite_pokemon_id: number,
-  wins: 0,
-  losses: 0,
+  wins: number,
+  losses: number,
+  win_sreak: number,
 };
 
 export type GuessResult = {
