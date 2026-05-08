@@ -34,7 +34,7 @@ export default function Gamescreen() {
   const guesses = squirdle.state?.guesses ?? [];
   const guessesLeft = 8 - guesses.length;
 
-  
+
   async function submit(_error: string, body: FormData) {
     const pokemon_id = Number(body.get("pokemon_id"));
 
@@ -47,12 +47,10 @@ export default function Gamescreen() {
       return "Invalid Pokémon";
     }
 
-    await squirdle.guess(pokemon_id);
-
-    return "";
+    return await squirdle.guess(pokemon_id);
   }
 
-  const [_error, action, pending] = React.useActionState(submit, "");
+  const [error, action, pending] = React.useActionState(submit, "");
 
   return (
     <>
@@ -82,7 +80,7 @@ export default function Gamescreen() {
 
           <form action={action} className="guess-bar">
             <PokemonInput label="Guess Pokémon" name="pokemon_id" required />
-
+            {/* {error ? <small aria-invalid="true">{error}</small> : null} */}
             <button
               type="submit"
               className="primary-btn"
@@ -205,10 +203,10 @@ function PokeballIcon({ result }: { result: ResultIcon }) {
     result === "check"
       ? checkBall
       : result === "x"
-      ? xBall
-      : result === "up"
-      ? upBall
-      : downBall;
+        ? xBall
+        : result === "up"
+          ? upBall
+          : downBall;
 
   return (
     <img
