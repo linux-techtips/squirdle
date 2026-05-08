@@ -4,6 +4,7 @@ import { Auth } from "@/client";
 import * as React from "react";
 
 import { useMusic } from "@/client/pages/MusicContext";
+import pokeballImg from "../assets/Pokeball.png";
 
 export default function Homescreen() {
   const router = Router.use();
@@ -40,8 +41,8 @@ export default function Homescreen() {
           </p>
 
           <img
-            src="/static/dragon-type.png"
-            alt="Dragon Type"
+            src={pokeballImg}
+            alt="Pokeball image"
             className="type-img"
           />
 
