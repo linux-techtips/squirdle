@@ -7,7 +7,12 @@ import index from "@/client/index.html";
 async function main() {
   const app = App.production(Bun.env.DATABASE_URL!, Bun.env.TOKIN_SECRET!);
 
-  const stderr = tracing.File.stderr();
+  let filter = tracing.All;
+  if (Bun.env.NODE_ENV === "production") {
+    filter = (level) => Boolean(level & (tracing.LEVEL.INFO | tracing.LEVEL.ERROR));
+  }
+
+  const stderr = tracing.File.stderr(filter);
 
   tracing.subscribe(app.tracer, stderr.interface());
 

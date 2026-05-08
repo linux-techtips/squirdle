@@ -26,17 +26,7 @@ export default function Gamescreen() {
   const { setMusicOn } = useMusic();
   const [showPokedex, setShowPokedex] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!auth.state) {
-      router.navigate("/signin");
-    }
-  }, [auth.state]);
-
-  if (!auth.state) return null;
-
   const guesses = squirdle.state?.guesses ?? [];
-  const guessesLeft = 8 - guesses.length;
-
 
   async function submit(_error: string, body: FormData) {
     const pokemon_id = Number(body.get("pokemon_id"));
@@ -74,7 +64,7 @@ export default function Gamescreen() {
           <h1 className="title">Who&apos;s That Pokémon?</h1>
 
           <p className="subtitle">
-            You have {guessesLeft} guesses left.
+            You have {squirdle.state?.remaining} guesses left.
           </p>
 
           <p className="subtitle">
@@ -131,30 +121,30 @@ export default function Gamescreen() {
           )}
         </section>
       </main>
-        {showPokedex && (
-          <div
-            className="pokedex-modal-overlay"
+      {showPokedex && (
+        <div
+          className="pokedex-modal-overlay"
+          onClick={() => setShowPokedex(false)}
+        >
+
+          <button
+            type="button"
+            className="modal-close-btn"
             onClick={() => setShowPokedex(false)}
           >
+            ×
+          </button>
 
-            <button
-              type="button"
-              className="modal-close-btn"
-              onClick={() => setShowPokedex(false)}
-            >
-              ×
-            </button>
+          <div
+            className="pokedex-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
 
-            <div
-              className="pokedex-modal"
-              onClick={(e) => e.stopPropagation()}
-            >
-              
 
-              <Pokedex hideNavbar />
-            </div>
+            <Pokedex hideNavbar />
           </div>
-        )}
+        </div>
+      )}
     </>
   );
 }
