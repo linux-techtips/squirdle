@@ -104,6 +104,7 @@ export namespace Auth {
   export const Context = React.createContext<Context>(undefined as any);
 
   export function use(): Context {
+    
     return React.use(Context);
   }
 

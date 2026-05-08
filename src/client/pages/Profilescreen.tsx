@@ -114,6 +114,29 @@ export default function Profile() {
             );
           })}
         </section>
+        <section className="card">
+          <h2>Profile Options</h2>
+          <p>
+            Deleting your account is irreversible.</p>
+            <p>All your data will be lost.
+          </p>
+          <button
+              className="primary-btn danger-btn"
+              onClick={async () => {
+                const confirmDelete = window.confirm(
+                  "Are you sure you want to delete your profile? This cannot be undone."
+                );
+
+                if (!confirmDelete) return;
+
+                setMusicOn(false);
+                await auth.deleteUrself();
+                router.navigate("/signin");
+              }}
+            >
+              Delete Profile
+            </button>
+        </section>
       </main>
     </>
   );
