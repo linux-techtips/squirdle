@@ -1,16 +1,31 @@
-import Navbar from "../components/Navbar.tsx";
+import { Navbar } from "@/client/components";
 import { Router } from "@/client";
+import { Auth } from "@/client";
+import * as React from "react";
 
 export default function Homescreen() {
   const router = Router.use();
+  const auth = Auth.use();
+
+   React.useEffect(() => {
+    if (!auth.state) {
+      router.navigate("/signin");
+    }
+  }, [auth.state]);
+
+  if (!auth.state) return null;
 
   return (
     <>
       <Navbar
-        onGoHome={() => router.navigate("/")}
+        onGoHome={() => router.navigate("/home")}
         onOpenProfile={() => router.navigate("/profile")}
         onOpenPokedex={() => router.navigate("/pokedex")}
         onOpenSettings={() => router.navigate("/settings")}
+        onLogout={async () => {
+          await auth.signOut();
+          router.navigate("/signin");
+        }}
       />
 
       <main className="page">

@@ -10,9 +10,9 @@ export default function SignUp() {
   const submit = async (_error: string, body: FormData) => {
     const resp = await auth.signUp(body);
     if (resp.ok) {
-      router.navigate("/");
-      return "";
-    }
+    router.navigate("/signin");
+    return "";
+  }
     if (resp.status === 409) return "user with provided username already exists.";
 
     return "something went wrong";

@@ -4,6 +4,7 @@ type NavbarProps = {
   onOpenProfile?: () => void;
   onOpenPokedex?: () => void;
   onOpenSettings?: () => void;
+  onLogout: () => void;
 };
 
 export default function Navbar({
@@ -12,6 +13,8 @@ export default function Navbar({
   onOpenProfile,
   onOpenPokedex,
   onOpenSettings,
+  onLogout,
+   
 }: NavbarProps) {
   return (
     <header className="navbar">
@@ -50,7 +53,7 @@ export default function Navbar({
           Settings
         </button>
 
-        <button className="nav-btn logout-btn" type="button">
+        <button onClick={onLogout} className="nav-btn">
           Logout
         </button>
       </nav>

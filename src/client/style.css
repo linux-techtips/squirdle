@@ -165,7 +165,8 @@ body {
 
 .guess-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: 160px repeat(5, 1fr);
+  align-items: center;
   gap: 12px;
   padding: 12px;
   border-bottom: 3px solid #334155;
@@ -177,6 +178,20 @@ body {
   font-size: 12px;
   font-weight: bold;
   color: #facc15;
+}
+
+.pokeball-result {
+  width: 55px;
+  height: 55px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(4px 4px 0 #000);
+}
+
+.pokemon-guess-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .guess-row img {
@@ -222,16 +237,9 @@ body {
   border-radius: 0;
   padding: 20px;
   text-align: center;
-  box-shadow: 8px 8px 0 #000;
-}
-
-.pokemon-sprite {
-  width: 96px;
-  height: 96px;
-  margin: 0 auto 12px;
-  background-repeat: no-repeat;
-  image-rendering: pixelated;
-  filter: drop-shadow(4px 4px 0 #000);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .pokemon-card h2 {
@@ -286,7 +294,8 @@ body {
 .setting-row input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #38bdf8;
+  accent-color: #0d6efd;
+  /* nice blue */
   cursor: pointer;
 }
 
@@ -328,12 +337,12 @@ body {
   transition: 0.3s;
 }
 
-.switch input:checked + .slider {
-  background-color: #38bdf8;
+.switch input:checked+.slider {
+  background-color: #0d6efd;
 }
 
-.switch input:checked + .slider::before {
-  transform: translateX(24px);
+.switch input:checked+.slider::before {
+  transform: translateX(26px);
 }
 
 /* Theme preview */
@@ -566,3 +575,7 @@ body {
   border-radius: 0;
 }
 
+.light-mode .card {
+  background-color: white;
+  color: #111827;
+}

@@ -1,25 +1,14 @@
+import type { Profile, GameState, GuessResult } from "@/types";
+
+// NOTE: react-scan MUST be imported before react.
 import { scan } from "react-scan";
 import { createRoot } from "react-dom/client";
 
-import * as React from "react";
-
-import type { Profile, GameState, GuessResult } from "@/types";
-
 import * as tokin from "@/lib/tokin/client";
 import * as pages from "@/client/pages";
+import * as React from "react";
 
 import "./style.css";
-
-export function useDebounce<T>(delay: number, value: T): T {
-  const [debounced, setDebounced] = React.useState(value);
-
-  React.useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-
-  return debounced;
-}
 
 export namespace Router {
   type RouteComponent = (props?: any) => React.ReactNode;
@@ -71,7 +60,7 @@ export namespace Router {
 
     const Route = routes[state.path];
 
-    if (Route === undefined) window.location.pathname = "/";
+   if (Route === undefined) window.location.pathname = "/signin";
 
     return (
       <Context.Provider value={{ navigate: navigate as NavigateFn<RegisteredRoutes> }}>
@@ -89,8 +78,16 @@ export namespace Router {
   }[keyof RegisteredRoutes & string];
 
   export function Navigate(props: NavigateProps) {
-    use().navigate(props.to as never, (props as { props?: unknown }).props as never);
-    return null;
+  const router = use();
+
+  React.useEffect(() => {
+    router.navigate(
+      props.to as never,
+      (props as { props?: unknown }).props as never
+    );
+  }, []);
+
+  return null;
   }
 };
 
@@ -225,8 +222,13 @@ const routes = {
   "/settings": pages.Settings,
   "/profile": pages.Profilescreen,
   "/pokedex": pages.Pokedex,
+  "/home": pages.Homescreen,
   "/game": pages.Gamescreen,
-  "/": pages.Homescreen,
+  "/signup": pages.SignUp,
+  "/signin": pages.SignIn,
+  "/dev": pages.Dev,
+
+  "/": () => <Router.Navigate to="/signin" />,
 } as const;
 
 const app = (

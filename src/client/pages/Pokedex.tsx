@@ -1,31 +1,22 @@
-import { useState } from "react";
-import Navbar from "../components/Navbar.tsx";
+import pokedex from "@/pokedex.json";
 
-import pokedex from "../../pokedex.json";
-import spritesheet from "../assets/spritesheet.webp";
-
+import { Navbar, Sprite } from "@/client/components";
 import { Router } from "@/client";
+import { Auth } from "@/client";
 
-type Pokemon = {
-  generation: number;
-  height: number;
-  weight: number;
-  type1: string;
-  type2: string | null;
-  name: string;
-};
+import { POKEMON_TYPES, type Pokemon } from "@/types";
 
-const SPRITE_SIZE = 96;
-const COLUMNS = 26;
+import * as React from "react";
 
 export default function Pokedex() {
   const router = Router.use();
+  const auth = Auth.use();
 
   const pokemonList = pokedex as Pokemon[];
 
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
-  const [maxWeight, setMaxWeight] = useState("");
+  const [search, setSearch] = React.useState("");
+  const [typeFilter, setTypeFilter] = React.useState("");
+  const [maxWeight, setMaxWeight] = React.useState("");
 
   const filteredPokemon = pokemonList.filter((pokemon) => {
     const matchesName = pokemon.name
@@ -43,13 +34,25 @@ export default function Pokedex() {
     return matchesName && matchesType && matchesWeight;
   });
 
+     React.useEffect(() => {
+    if (!auth.state) {
+      router.navigate("/signin");
+    }
+  }, [auth.state]);
+
+  if (!auth.state) return null;
+
   return (
     <>
       <Navbar
-        onGoHome={() => router.navigate("/")}
+        onGoHome={() => router.navigate("/home")}
         onOpenProfile={() => router.navigate("/profile")}
         onOpenPokedex={() => router.navigate("/pokedex")}
         onOpenSettings={() => router.navigate("/settings")}
+        onLogout={async () => {
+          await auth.signOut();
+          router.navigate("/signin");
+        }}
       />
 
       <main className="page">
@@ -68,24 +71,7 @@ export default function Pokedex() {
             onChange={(e) => setTypeFilter(e.target.value)}
           >
             <option value="">All types</option>
-            <option value="normal">Normal</option>
-            <option value="fire">Fire</option>
-            <option value="water">Water</option>
-            <option value="grass">Grass</option>
-            <option value="electric">Electric</option>
-            <option value="ice">Ice</option>
-            <option value="fighting">Fighting</option>
-            <option value="poison">Poison</option>
-            <option value="ground">Ground</option>
-            <option value="flying">Flying</option>
-            <option value="psychic">Psychic</option>
-            <option value="bug">Bug</option>
-            <option value="rock">Rock</option>
-            <option value="ghost">Ghost</option>
-            <option value="dragon">Dragon</option>
-            <option value="dark">Dark</option>
-            <option value="steel">Steel</option>
-            <option value="fairy">Fairy</option>
+            {POKEMON_TYPES.map((poke_type, i) => <option value={poke_type} key={i}>{poke_type}</option>)}
           </select>
 
           <input
@@ -98,29 +84,17 @@ export default function Pokedex() {
 
         <div className="pokemon-grid">
           {filteredPokemon.map((pokemon) => {
-            const originalIndex = pokemonList.indexOf(pokemon);
-            const x = (originalIndex % COLUMNS) * SPRITE_SIZE;
-            const y = Math.floor(originalIndex / COLUMNS) * SPRITE_SIZE;
-
             return (
               <div className="pokemon-card" key={pokemon.name}>
-                <div
-                  className="pokemon-sprite"
-                  style={{
-                    backgroundImage: `url(${spritesheet})`,
-                    backgroundPosition: `-${x}px -${y}px`,
-                    backgroundSize: `${COLUMNS * SPRITE_SIZE}px auto`,
-                  }}
-                />
-
+                <Sprite poke_id={pokemon.id} />
                 <h2>{pokemon.name}</h2>
                 <p>Generation {pokemon.generation}</p>
                 <p>
                   {pokemon.type1}
                   {pokemon.type2 ? ` / ${pokemon.type2}` : ""}
                 </p>
-                <p>Height: {pokemon.height}</p>
-                <p>Weight: {pokemon.weight}</p>
+                <p>Height: {pokemon.height / 10}</p>
+                <p>Weight: {pokemon.weight / 10}</p>
               </div>
             );
           })}

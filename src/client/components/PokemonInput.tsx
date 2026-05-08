@@ -1,13 +1,13 @@
 import type { Pokemon } from "@/types";
 import * as React from "react";
 
-import { Sprite } from "@/client/components/Sprite";
+import Sprite from "./Sprite";
 
 import pokedex from "@/pokedex.json";
 
 const pokemon_by_name = new Map((pokedex as Pokemon[]).map(p => [p.name.toLowerCase(), p]))
 
-export function PokemonInput({ label, name, required }: { label: string, name: string, required?: boolean }) {
+export default function PokemonInput({ label, name, required }: { label: string, name: string, required?: boolean }) {
   // TODO: (Carter) this is slop. but by god does this slop work.
   const [query, setQuery] = React.useState("");
   const [selected, setSelected] = React.useState<Pokemon | null>(null);

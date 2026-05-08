@@ -1,22 +1,33 @@
-import { useEffect, useState } from "react";
-import Navbar from "../components/Navbar.tsx";
+import { Navbar } from "@/client/components";
 import { Router } from "@/client";
 import { useEffect, useRef, useState } from "react";
 import bgMusic from "../assets/music/background.mp3";
+import { Auth } from "@/client";
 
+
+import * as React from "react";
 
 export default function Settings() {
   const router = Router.use();
+  const auth = Auth.use();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const [musicOn, setMusicOn] = useState(false);
-  const [volume, setVolume] = useState(50);
+  const [musicOn, setMusicOn] = React.useState(false);
+  const [volume, setVolume] = React.useState(50);
 
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("theme") === "dark";
+  const [darkMode, setDarkMode] = React.useState(() => {
+    return localStorage.getItem("theme") !== "light";
   });
 
-  useEffect(() => {
+   React.useEffect(() => {
+    if (!auth.state) {
+      router.navigate("/signin");
+    }
+  }, [auth.state]);
+
+  if (!auth.state) return null;
+
+  React.useEffect(() => {
     if (darkMode) {
       document.body.classList.remove("light-mode");
       document.body.classList.add("dark-mode");
@@ -48,10 +59,14 @@ export default function Settings() {
   return (
     <>
       <Navbar
-        onGoHome={() => router.navigate("/")}
+        onGoHome={() => router.navigate("/home")}
         onOpenProfile={() => router.navigate("/profile")}
         onOpenPokedex={() => router.navigate("/pokedex")}
         onOpenSettings={() => router.navigate("/settings")}
+        onLogout={async () => {
+          await auth.signOut();
+          router.navigate("/signin");
+        }}
       />
 
       <main className="page">

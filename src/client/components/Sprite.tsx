@@ -6,7 +6,7 @@ const SPRITE_ROWS = 25 as const;
 
 type Props = { poke_id: number, title?: string };
 
-export function Sprite({ poke_id, title }: Props) {
+export default function Sprite({ poke_id, title }: Props) {
   const idx = poke_id - 1;
   const x = idx % SPRITE_COLS;
   const y = Math.floor(idx / SPRITE_COLS);
