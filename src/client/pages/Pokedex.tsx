@@ -10,7 +10,12 @@ import * as React from "react";
 
 import { useMusic } from "@/client/pages/MusicContext";
 
-export default function Pokedex() {
+
+export default function Pokedex({
+  hideNavbar = false,
+  }: {
+    hideNavbar?: boolean;
+  } = {}) {
   const router = Router.use();
   const auth = Auth.use();
   const { setMusicOn } = useMusic();
@@ -47,17 +52,19 @@ export default function Pokedex() {
 
   return (
     <>
-      <Navbar
-        onGoHome={() => router.navigate("/")}
-        onOpenProfile={() => router.navigate("/profile")}
-        onOpenPokedex={() => router.navigate("/pokedex")}
-        onOpenSettings={() => router.navigate("/settings")}
-        onLogout={async () => {
-          setMusicOn(false);
-          await auth.signOut();
-          router.navigate("/signin");
-        }}
-      />
+      {!hideNavbar && (
+        <Navbar
+          onGoHome={() => router.navigate("/")}
+          onOpenProfile={() => router.navigate("/profile")}
+          onOpenPokedex={() => router.navigate("/pokedex")}
+          onOpenSettings={() => router.navigate("/settings")}
+          onLogout={async () => {
+            setMusicOn(false);
+            await auth.signOut();
+            router.navigate("/signin");
+          }}
+        />
+      )}
 
       <main className="page">
         <h1>Pokédex</h1>
