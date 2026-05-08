@@ -43,8 +43,8 @@ export type Profile = {
   id: number,
   username: string,
   favorite_pokemon_id: number,
-  wins: 0,
-  losses: 0,
+  wins: number,
+  losses: number,
 };
 
 export type GuessResult = {

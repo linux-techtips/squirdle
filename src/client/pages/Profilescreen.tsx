@@ -29,6 +29,13 @@ export default function Profile() {
 
   if (!auth.state) return null;
 
+  const gamesPlayed = auth.state.wins + auth.state.losses;
+
+  const winRate =
+    gamesPlayed === 0
+      ? 0
+      : Math.round((auth.state.wins / gamesPlayed) * 100);
+
   return (
     <>
       <Navbar
@@ -52,6 +59,22 @@ export default function Profile() {
           <p>
             <strong>Username:</strong> {auth.state.username}
           </p>
+
+          <p>
+            <strong>Games Played:</strong> {gamesPlayed}
+          </p>
+
+          <p>
+            <strong>Wins:</strong> {auth.state.wins}
+          </p>
+
+          <p>
+            <strong>Losses:</strong> {auth.state.losses}
+          </p>
+
+          <p>
+            <strong>Win Rate:</strong> {winRate}%
+          </p>
         </section>
 
         <section className="card">
@@ -70,13 +93,26 @@ export default function Profile() {
             <p>No players found.</p>
           )}
 
-          {profiles.map((profile) => (
-            <div className="player-result-card" key={profile.id}>
-              <Sprite poke_id={profile.favorite_pokemon_id} />
+          {profiles.map((profile) => {
+            const searchedGamesPlayed = profile.wins + profile.losses;
 
-              <h3>{profile.username}</h3>
-            </div>
-          ))}
+            const searchedWinRate =
+              searchedGamesPlayed === 0
+                ? 0
+                : Math.round((profile.wins / searchedGamesPlayed) * 100);
+
+            return (
+              <div className="player-result-card" key={profile.id}>
+                <Sprite poke_id={profile.favorite_pokemon_id} />
+
+                <h3>{profile.username}</h3>
+                <p>Games Played: {searchedGamesPlayed}</p>
+                <p>Wins: {profile.wins}</p>
+                <p>Losses: {profile.losses}</p>
+                <p>Win Rate: {searchedWinRate}%</p>
+              </div>
+            );
+          })}
         </section>
       </main>
     </>
