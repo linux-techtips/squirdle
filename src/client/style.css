@@ -57,6 +57,7 @@ body {
 
 .navbar-right {
   display: flex;
+  align-items: center;
   gap: 24px;
 }
 
@@ -72,6 +73,7 @@ body {
   cursor: pointer;
   box-shadow: 5px 5px 0 #000;
   text-shadow: 3px 3px 0 var(--retro-shadow);
+  margin: 0;
 }
 
 .nav-btn:hover,
@@ -372,7 +374,7 @@ body {
 
 .light-mode .navbar-title {
   color: #ffd35c;
-    text-shadow:
+  text-shadow:
     3px 3px 0 #5a1f00,
     6px 6px 0 #000000;
 }

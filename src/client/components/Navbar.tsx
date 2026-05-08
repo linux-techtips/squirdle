@@ -14,7 +14,7 @@ export default function Navbar({
   onOpenPokedex,
   onOpenSettings,
   onLogout,
-   
+
 }: NavbarProps) {
   return (
     <header className="navbar">
@@ -53,7 +53,7 @@ export default function Navbar({
           Settings
         </button>
 
-        <button onClick={onLogout} className="nav-btn">
+        <button onClick={onLogout} className="nav-btn" type="button">
           Logout
         </button>
       </nav>

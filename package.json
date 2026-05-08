@@ -10,7 +10,8 @@
     "serve": "NODE_ENV=production bun run --cwd out src",
     "clean": "rm -fr out",
     "db:init": "bun run scripts/init.script",
-    "db:clean": "rm squirdle.db*"
+    "db:clean": "rm squirdle.db*",
+    "db:upload": "sqlite3 squirdle.db \"VACUUM INTO 'upload.db'\""
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -19,8 +19,8 @@ export default function Homescreen() {
     squirdle.status === "won"
       ? "You solved today's Squirdle game!"
       : squirdle.status === "lost"
-      ? "You did not solve today's Squirdle game."
-      : "You have not solved today's Squirdle game yet.";
+        ? "You did not solve today's Squirdle game."
+        : "You have not solved today's Squirdle game yet.";
 
   React.useEffect(() => {
     if (!auth.state) {
@@ -48,7 +48,7 @@ export default function Homescreen() {
         <section className="card hero-card">
           <h1 className="title">Squirdle</h1>
           <p className="subtitle">
-            Guess the mystery Pokémon in up to 8 tries.
+            Guess the mystery Pokémon.
           </p>
 
           <img
@@ -69,13 +69,13 @@ export default function Homescreen() {
 
         <section className="card">
           <h2>Today's Summary</h2>
-            <p>{summaryText}</p>
-            <p><strong>Status:</strong> {squirdle.status}
-            </p>
-            <p><strong>Guesses Made:</strong> {guessesMade}
-            </p>
-            <p><strong>Guesses Left:</strong> {guessesLeft}
-            </p>
+          <p>{summaryText}</p>
+          <p><strong>Status:</strong> {squirdle.status}
+          </p>
+          <p><strong>Guesses Made:</strong> {guessesMade}
+          </p>
+          <p><strong>Guesses Left:</strong> {guessesLeft}
+          </p>
         </section>
       </main>
     </>
