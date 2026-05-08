@@ -15,6 +15,8 @@ import downBall from "../assets/downball.png";
 
 import { useMusic } from "@/client/pages/MusicContext";
 
+import Pokedex from "./Pokedex";
+
 type ResultIcon = "check" | "x" | "up" | "down";
 
 export default function Gamescreen() {
@@ -22,6 +24,7 @@ export default function Gamescreen() {
   const squirdle = Squirdle.use();
   const auth = Auth.use();
   const { setMusicOn } = useMusic();
+  const [showPokedex, setShowPokedex] = React.useState(false);
 
   React.useEffect(() => {
     if (!auth.state) {
@@ -90,6 +93,15 @@ export default function Gamescreen() {
               Submit
             </button>
           </form>
+          <div className="guess-actions">
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={() => setShowPokedex(true)}
+            >
+              Open Pokédex
+            </button>
+          </div>
         </section>
 
         <section className="card">
@@ -119,6 +131,30 @@ export default function Gamescreen() {
           )}
         </section>
       </main>
+        {showPokedex && (
+          <div
+            className="pokedex-modal-overlay"
+            onClick={() => setShowPokedex(false)}
+          >
+
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={() => setShowPokedex(false)}
+            >
+              ×
+            </button>
+
+            <div
+              className="pokedex-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              
+
+              <Pokedex hideNavbar />
+            </div>
+          </div>
+        )}
     </>
   );
 }

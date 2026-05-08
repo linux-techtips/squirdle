@@ -1,14 +1,26 @@
 import { Navbar } from "@/client/components";
-import { Router } from "@/client";
-import { Auth } from "@/client";
 import * as React from "react";
+import { Router, Auth, Squirdle } from "@/client";
 
 import { useMusic } from "@/client/pages/MusicContext";
+import pokeballImg from "../assets/Pokeball.png";
 
 export default function Homescreen() {
   const router = Router.use();
   const auth = Auth.use();
   const { setMusicOn } = useMusic();
+  const squirdle = Squirdle.use();
+
+  const guessesMade = squirdle.state?.guesses.length ?? 0;
+
+  const guessesLeft = squirdle.state?.remaining ?? 8;
+
+  const summaryText =
+    squirdle.status === "won"
+      ? "You solved today's Squirdle game!"
+      : squirdle.status === "lost"
+      ? "You did not solve today's Squirdle game."
+      : "You have not solved today's Squirdle game yet.";
 
   React.useEffect(() => {
     if (!auth.state) {
@@ -40,8 +52,8 @@ export default function Homescreen() {
           </p>
 
           <img
-            src="/static/dragon-type.png"
-            alt="Dragon Type"
+            src={pokeballImg}
+            alt="Pokeball image"
             className="type-img"
           />
 
@@ -56,10 +68,14 @@ export default function Homescreen() {
         </section>
 
         <section className="card">
-          <h2>Today&apos;s Summary</h2>
-          <p>You have not solved today&apos;s Squirdle game yet.</p>
-          <p>Current streak: 4</p>
-          <p>Best streak: 9</p>
+          <h2>Today's Summary</h2>
+            <p>{summaryText}</p>
+            <p><strong>Status:</strong> {squirdle.status}
+            </p>
+            <p><strong>Guesses Made:</strong> {guessesMade}
+            </p>
+            <p><strong>Guesses Left:</strong> {guessesLeft}
+            </p>
         </section>
       </main>
     </>
