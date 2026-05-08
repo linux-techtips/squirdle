@@ -37,7 +37,7 @@ export default function Pokedex() {
     return matchesName && matchesType && matchesWeight;
   });
 
-     React.useEffect(() => {
+  React.useEffect(() => {
     if (!auth.state) {
       router.navigate("/signin");
     }
@@ -48,7 +48,7 @@ export default function Pokedex() {
   return (
     <>
       <Navbar
-        onGoHome={() => router.navigate("/home")}
+        onGoHome={() => router.navigate("/")}
         onOpenProfile={() => router.navigate("/profile")}
         onOpenPokedex={() => router.navigate("/pokedex")}
         onOpenSettings={() => router.navigate("/settings")}

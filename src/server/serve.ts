@@ -1,47 +1,11 @@
-import type { Pokemon, Profile, Registration } from "@/types";
+import type { Profile, Registration } from "@/types";
 import type { BunRequest as Request } from "bun";
 
 import * as tracing from "@/lib/tracing";
 import * as tokin from "@/lib/tokin";
-import * as time from "@/lib/time";
 import * as db from "@/server/db";
 
-import pokedex from "@/pokedex.json";
-
-export type App = {
-  sqlite: db.SQLiteDatabase,
-  tracer: tracing.Tracer,
-  hasher: tokin.Hasher,
-  clock: time.Clock,
-};
-
-export function testing(clock: time.Clock, schedule: number[]): App {
-  const sqlite = db.open(":memory:");
-
-  const hasher = tokin.hasher("TESTING_SECRET");
-  const tracer = tracing.tracer();
-
-  const stderr = tracing.File.stderr();
-
-  tracing.subscribe(tracer, stderr.interface());
-
-  const app: App = { sqlite, hasher, tracer, clock };
-
-  db.seed_pokemon(app, pokedex as Pokemon[]);
-  db.seed_schedule(app, schedule);
-
-  return app;
-}
-
-export function production(): App {
-  const sqlite = db.open(Bun.env.DATABASE_URL!);
-  const hasher = tokin.hasher(Bun.env.TOKIN_SECRET!);
-  const tracer = tracing.tracer();
-
-  const clock = time.Now.init().interface();
-
-  return { sqlite, hasher, tracer, clock };
-}
+import type { App } from ".";
 
 export async function signup(app: App, registration: Omit<Registration, "passhash"> & { password: string }): Promise<Profile | null> {
   return db.register(app, { ...registration, passhash: await Bun.password.hash(registration.password) });
@@ -66,6 +30,7 @@ export function issueAuthTokens(app: App, req: Request, profile: Profile, hasher
   const primary_payload = tokin.payload<Profile>(profile, iat, primary_exp);
   const primary_token = tokin.sign(primary_payload, app.hasher);
 
+  // TODO: (Carter) ideally, we would only store the profile id in this token. there is a solution, but this works for now.
   const refresh_payload = tokin.payload<Profile>(profile, iat, refresh_exp);
   const refresh_token = tokin.sign(refresh_payload, hasher);
 
@@ -118,10 +83,20 @@ export function guard(app: App, handler: (req: Request, profile: Profile) => Res
   };
 }
 
-export function serve(index: Bun.HTMLBundle, app: App): Bun.Server<undefined> {
+export function serve(app: App, hostname: string, index: Bun.HTMLBundle): Bun.Server<undefined> {
   return Bun.serve({
-    development: true,
+    development: Bun.env.NODE_ENV === "development",
+    hostname,
+    error(e) {
+      tracing.error(app.tracer, `${e.message}`, e);
+      return Response.json({ error: "something went wrong" }, { status: 500 });
+    },
     routes: {
+      "/api/health": {
+        GET: async () => {
+          return new Response("Thou crawler! Thou cringer! Thou smallest of the small!");
+        },
+      },
       "/api/auth/signup": {
         POST: async (req: Request) => {
           tracing.trace(app.tracer, `${req.url}`);
@@ -243,6 +218,17 @@ export function serve(index: Bun.HTMLBundle, app: App): Bun.Server<undefined> {
 
           return Response.json(profiles, { status: 200 });
         },
+      },
+      "/api/profiles": {
+        DELETE: guard(app, (req, profile) => {
+          tracing.debug(app.tracer, `${req.url}`);
+
+          if (db.delete_user(app, profile.id)) {
+            return new Response(null, { status: 204 });
+          }
+
+          return Response.json({ error: "how did we get here?" }, { status: 500 });
+        }),
       },
       "/*": index,
     },

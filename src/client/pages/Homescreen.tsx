@@ -11,7 +11,7 @@ export default function Homescreen() {
   const auth = Auth.use();
   const { setMusicOn } = useMusic();
 
-   React.useEffect(() => {
+  React.useEffect(() => {
     if (!auth.state) {
       router.navigate("/signin");
     }
@@ -22,7 +22,7 @@ export default function Homescreen() {
   return (
     <>
       <Navbar
-        onGoHome={() => router.navigate("/home")}
+        onGoHome={() => router.navigate("/")}
         onOpenProfile={() => router.navigate("/profile")}
         onOpenPokedex={() => router.navigate("/pokedex")}
         onOpenSettings={() => router.navigate("/settings")}

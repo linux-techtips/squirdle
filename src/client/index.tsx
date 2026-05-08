@@ -1,7 +1,5 @@
 import type { Profile, GameState, GuessResult } from "@/types";
 
-// NOTE: react-scan MUST be imported before react.
-import { scan } from "react-scan";
 import { createRoot } from "react-dom/client";
 
 import * as tokin from "@/lib/tokin/client";
@@ -98,6 +96,7 @@ export namespace Auth {
     state: Profile | null,
     isSignedIn(): boolean,
     signOut(): Promise<void>,
+    deleteUrself(): Promise<void>,
     signIn(body: FormData): Promise<Response>,
     signUp(body: FormData): Promise<Response>,
   };
@@ -123,6 +122,15 @@ export namespace Auth {
 
     const [state, setState] = React.useState(readState());
 
+    React.useEffect(() => {
+      const listener = (event: CookieChangeEvent) => {
+        if (event.deleted[0]?.name === "primary-token") setState(null);
+      };
+
+      window.cookieStore.addEventListener("change", listener);
+      return () => window.cookieStore.removeEventListener("change", listener);
+    }, []);
+
     const submit = async (path: string, body: FormData) => {
       const resp = await fetch(path, { method: "POST", body });
 
@@ -133,9 +141,13 @@ export namespace Auth {
 
     const context: Context = {
       isSignedIn: () => state !== null,
-      signOut: async () => {
+      async signOut() {
         await window.cookieStore.delete("primary-token");
         setState(null);
+      },
+      async deleteUrself() {
+        const resp = await fetch("/api/profiles", { method: "DELETE" });
+        if (resp.ok) this.signOut();
       },
       signUp: (body) => submit("/api/auth/signup", body),
       signIn: (body) => submit("/api/auth/signin", body),
@@ -180,9 +192,15 @@ export namespace Squirdle {
       const controller = new AbortController();
 
       fetch("/api/game", { method: "POST", signal: controller.signal })
-        .then(r => r.ok ? r.json() : null)
+        .then(r => {
+          if (r.ok) return r.json();
+          auth.signOut();
+          return null;
+        })
         .then(state => setState(state))
-        .catch(_ => { if (controller.signal.aborted) return });
+        .catch(_ => {
+          if (controller.signal.aborted) return;
+        });
 
       return () => controller.abort();
     }, [auth.state]);
@@ -226,17 +244,24 @@ export namespace Squirdle {
   }
 };
 
+function Protected(child: () => React.ReactNode) {
+  return () => (
+    <Auth.Guard fallback={<Router.Navigate to="/signin" />}>
+      {child()}
+    </Auth.Guard>
+  );
+}
+
 const routes = {
-  "/settings": pages.Settings,
-  "/profile": pages.Profilescreen,
-  "/pokedex": pages.Pokedex,
-  "/home": pages.Homescreen,
-  "/game": pages.Gamescreen,
   "/signup": pages.SignUp,
   "/signin": pages.SignIn,
   "/dev": pages.Dev,
 
-  "/": () => <Router.Navigate to="/signin" />,
+  "/profile": Protected(pages.Profilescreen),
+  "/settings": Protected(pages.Settings),
+  "/pokedex": Protected(pages.Pokedex),
+  "/game": Protected(pages.Gamescreen),
+  "/": Protected(pages.Homescreen),
 } as const;
 
 const app = (
@@ -260,6 +285,3 @@ if (import.meta.hot) {
   createRoot(document.body).render(app);
 }
 
-if (process.env.NODE_ENV === "development") {
-  scan({ enabled: true });
-}

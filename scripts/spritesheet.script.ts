@@ -1,10 +1,8 @@
-import { MAX_POKEMON_COUNT } from "@/lib";
-
 import * as path from "path";
 import { $ } from "bun";
 
 export async function generateSpriteSheet(dir: string, name: string) {
-  const files = Array.from({ length: MAX_POKEMON_COUNT }, (_, i) => path.join(dir, `${i + 1}.png`));
+  const files = Array.from({ length: 649 }, (_, i) => path.join(dir, `${i + 1}.png`));
 
   await $`montage ${files} -geometry 96x96+0+0 -background none -quality 100 -tile 26x25 ${name}`;
 }

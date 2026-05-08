@@ -1,12 +1,12 @@
-import * as App from "@/server/app";
 import * as db from "@/server/db";
+import { App } from "@/server";
 
 import type { Pokemon } from "@/types";
 
 import pokedex from "@/pokedex.json";
 
 async function main() {
-  const app = App.production();
+  const app = App.production(Bun.env.DATABASE_URL!, Bun.env.TOKIN_SECRET!);
 
   db.migrate(app.sqlite);
   db.seed_pokemon(app, pokedex as Pokemon[]);

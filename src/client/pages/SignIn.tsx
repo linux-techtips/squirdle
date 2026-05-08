@@ -9,7 +9,7 @@ export default function SignIn() {
   const submit = async (_error: string, body: FormData) => {
     const resp = await auth.signIn(body);
     if (resp.ok) {
-      router.navigate("/home");
+      router.navigate("/");
       return "";
     }
 

@@ -23,7 +23,9 @@ CREATE TABLE IF NOT EXISTS players (
 CREATE TABLE IF NOT EXISTS player_stats (
   player_id INTEGER PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE,
   wins INTEGER NOT NULL DEFAULT 0 CHECK (wins >= 0),
-  losses INTEGER NOT NULL DEFAULT 0 CHECK (losses >= 0)
+  losses INTEGER NOT NULL DEFAULT 0 CHECK (losses >= 0),
+  win_streak INTEGER NOT NULL DEFAULT 0 CHECK (win_streak >= 0),
+  max_win_streak INTEGER NOT NULL DEFAULT 0 CHECK (max_win_streak >= 0)
 ) STRICT;
 
 CREATE TABLE IF NOT EXISTS games (
@@ -52,7 +54,9 @@ SELECT
   user.username AS username,
   player.favorite_pokemon_id,
   stats.wins AS wins,
-  stats.losses AS losses
+  stats.losses AS losses,
+  stats.win_streak AS win_streak,
+  stats.max_win_streak AS max_win_streak
 FROM users AS user
 JOIN players AS player ON player.id = user.id
 JOIN player_stats AS stats ON stats.player_id = player.id;
@@ -128,6 +132,33 @@ BEGIN
   INSERT INTO users_fts(rowid, username) VALUES (NEW.id, NEW.username);
 END;
 
+CREATE VIRTUAL TABLE pokemon_fts USING fts5(
+  name,
+  content='pokemon',
+  content_rowid='id',
+  tokenize='trigram case_sensitive 0 remove_diacritics 1'
+);
+
+CREATE TRIGGER IF NOT EXISTS pokemon_fts_ai
+AFTER INSERT ON pokemon
+BEGIN
+  INSERT INTO pokemon_fts(rowid, name) VALUES (NEW.id, NEW.name);
+END;
+
+CREATE TRIGGER IF NOT EXISTS pokemon_fts_ad
+AFTER DELETE ON pokemon
+BEGIN
+  INSERT INTO pokemon_fts(pokemon_fts, rowid, name) VALUES ('delete', OLD.id, OLD.name);
+END;
+
+CREATE TRIGGER IF NOT EXISTS pokemon_fts_au
+AFTER UPDATE OF pokemon ON users
+BEGIN
+  INSERT INTO pokemon_fts(pokemon_fts, rowid, name) VALUES ('delete', OLD.id, OLD.name);
+  INSERT INTO pokemon_fts(rowid, name) VALUES (NEW.id, NEW.name);
+END;
+
+
 CREATE TRIGGER IF NOT EXISTS create_player_registration
 INSTEAD OF INSERT ON registrations
 BEGIN
@@ -153,15 +184,22 @@ CREATE TRIGGER IF NOT EXISTS update_player_stats_on_guess
 AFTER INSERT ON guesses
 BEGIN
   UPDATE player_stats SET
-    wins = player_stats.wins + iif(NEW.pokemon_id = game.pokemon_id, 1, 0),
-    losses = player_stats.losses + iif(
-      NEW.pokemon_id != game.pokemon_id
-      AND (SELECT COUNT(*) FROM guesses WHERE player_id = NEW.player_id) >= game.max_guess_count, 1, 0
-    )
-  FROM players AS player, games AS game
-  WHERE player.id = NEW.player_id
-    AND game.player_id = NEW.player_id
-    AND player_stats.player_id = player.id;
+    wins = wins + state.won,
+    losses = losses + state.lost,
+    win_streak = win_streak + state.won - (win_streak * state.lost),
+    max_win_streak = MAX(win_streak, max_win_streak)
+  FROM (
+    SELECT
+      CAST(NEW.pokemon_id = game.pokemon_id AS INTEGER) AS won,
+      CAST(
+        NEW.pokemon_id != game.pokemon_id AND
+        (SELECT COUNT(*) FROM guesses WHERE player_id = NEW.player_id) >= game.max_guess_count AS INTEGER
+      ) AS lost
+    FROM players AS player
+    JOIN games AS game ON game.player_id = player.id
+    WHERE player.id = NEW.player_id
+  ) AS state
+  WHERE player_stats.player_id = NEW.player_id;
 END;
 
 CREATE UNIQUE INDEX IF NOT EXISTS users_by_username ON users(username);
