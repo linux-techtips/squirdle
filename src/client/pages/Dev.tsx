@@ -17,12 +17,21 @@ export default function Dev() {
   return (
     <div>
       <ProfileInfo profile={auth.state} />
+      <DeleteProfile />
       <ProfileSearch />
       <GuessForm />
       <GuessList />
     </div>
   );
 
+}
+
+function DeleteProfile() {
+  const auth = Auth.use();
+
+  return (
+    <button onClick={async () => auth.deleteUrself()}>Delete Profile</button>
+  );
 }
 
 function ProfileSearch() {

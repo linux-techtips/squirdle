@@ -219,6 +219,17 @@ export function serve(app: App, hostname: string, index: Bun.HTMLBundle): Bun.Se
           return Response.json(profiles, { status: 200 });
         },
       },
+      "/api/profiles": {
+        DELETE: guard(app, (req, profile) => {
+          tracing.debug(app.tracer, `${req.url}`);
+
+          if (db.delete_user(app, profile.id)) {
+            return new Response(null, { status: 204 });
+          }
+
+          return Response.json({ error: "how did we get here?" }, { status: 500 });
+        }),
+      },
       "/*": index,
     },
   });

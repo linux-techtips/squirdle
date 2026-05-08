@@ -55,7 +55,7 @@ export default function Gamescreen() {
   return (
     <>
       <Navbar
-        onGoHome={() => router.navigate("/home")}
+        onGoHome={() => router.navigate("/")}
         onOpenProfile={() => router.navigate("/profile")}
         onOpenPokedex={() => router.navigate("/pokedex")}
         onOpenSettings={() => router.navigate("/settings")}

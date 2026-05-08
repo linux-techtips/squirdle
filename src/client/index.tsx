@@ -96,6 +96,7 @@ export namespace Auth {
     state: Profile | null,
     isSignedIn(): boolean,
     signOut(): Promise<void>,
+    deleteUrself(): Promise<void>,
     signIn(body: FormData): Promise<Response>,
     signUp(body: FormData): Promise<Response>,
   };
@@ -140,9 +141,13 @@ export namespace Auth {
 
     const context: Context = {
       isSignedIn: () => state !== null,
-      signOut: async () => {
+      async signOut() {
         await window.cookieStore.delete("primary-token");
         setState(null);
+      },
+      async deleteUrself() {
+        const resp = await fetch("/api/profiles", { method: "DELETE" });
+        if (resp.ok) this.signOut();
       },
       signUp: (body) => submit("/api/auth/signup", body),
       signIn: (body) => submit("/api/auth/signin", body),
@@ -239,17 +244,24 @@ export namespace Squirdle {
   }
 };
 
+function Protected(child: () => React.ReactNode) {
+  return () => (
+    <Auth.Guard fallback={<Router.Navigate to="/signin" />}>
+      {child()}
+    </Auth.Guard>
+  );
+}
+
 const routes = {
-  "/settings": pages.Settings,
-  "/profile": pages.Profilescreen,
-  "/pokedex": pages.Pokedex,
-  "/home": pages.Homescreen,
-  "/game": pages.Gamescreen,
   "/signup": pages.SignUp,
   "/signin": pages.SignIn,
   "/dev": pages.Dev,
 
-  "/": () => <Router.Navigate to="/signin" />,
+  "/profile": Protected(pages.Profilescreen),
+  "/settings": Protected(pages.Settings),
+  "/pokedex": Protected(pages.Pokedex),
+  "/game": Protected(pages.Gamescreen),
+  "/": Protected(pages.Homescreen),
 } as const;
 
 const app = (
