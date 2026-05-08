@@ -104,7 +104,6 @@ export namespace Auth {
   export const Context = React.createContext<Context>(undefined as any);
 
   export function use(): Context {
-    
     return React.use(Context);
   }
 
@@ -128,8 +127,8 @@ export namespace Auth {
         if (event.deleted[0]?.name === "primary-token") setState(null);
       };
 
-      window.cookieStore.addEventListener("change", listener);
-      return () => window.cookieStore.removeEventListener("change", listener);
+      window.cookieStore?.addEventListener("change", listener);
+      return () => window.cookieStore?.removeEventListener("change", listener);
     }, []);
 
     const submit = async (path: string, body: FormData) => {

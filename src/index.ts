@@ -16,7 +16,8 @@ async function main() {
 
   tracing.subscribe(app.tracer, stderr.interface());
 
-  const hostname = Bun.env.HOSTNAME ?? ((Bun.env.NODE_ENV === "production") ? "0.0.0.0" : "localhost");
+  // const hostname = Bun.env.HOSTNAME ?? ((Bun.env.NODE_ENV === "production") ? "0.0.0.0" : "localhost");
+  const hostname = "0.0.0.0";
   const server = serve(app, hostname, index);
 
   tracing.info(app.tracer, `starting server on: ${server.url}`);
