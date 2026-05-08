@@ -748,3 +748,22 @@ body {
   background-color: #54aaa3;
 }
 
+
+/* PokemonInput dropdown readability */
+
+ul[role="listbox"] {
+  background-color: #fff3c4 !important;
+  color: #2b1a12 !important;
+  border: 4px solid #54aaa3 !important;
+  box-shadow: 6px 6px 0 #6b2d12 !important;
+}
+
+ul[role="listbox"] li,
+ul[role="listbox"] * {
+  color: #2b1a12 !important;
+  text-shadow: none !important;
+}
+
+ul[role="listbox"] li:hover {
+  background-color: #f0cc62 !important;
+}
