@@ -3,9 +3,12 @@ import { Router } from "@/client";
 import { Auth } from "@/client";
 import * as React from "react";
 
+import { useMusic } from "@/client/pages/MusicContext";
+
 export default function Homescreen() {
   const router = Router.use();
   const auth = Auth.use();
+  const { setMusicOn } = useMusic();
 
    React.useEffect(() => {
     if (!auth.state) {
@@ -23,6 +26,7 @@ export default function Homescreen() {
         onOpenPokedex={() => router.navigate("/pokedex")}
         onOpenSettings={() => router.navigate("/settings")}
         onLogout={async () => {
+          setMusicOn(false);
           await auth.signOut();
           router.navigate("/signin");
         }}

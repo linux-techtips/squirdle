@@ -10,6 +10,8 @@ import * as React from "react";
 
 import "./style.css";
 
+import { MusicProvider } from "@/client/pages/MusicContext";
+
 export namespace Router {
   type RouteComponent = (props?: any) => React.ReactNode;
   type Routes = Readonly<Record<string, RouteComponent>>;
@@ -234,11 +236,13 @@ const routes = {
 const app = (
   <React.StrictMode>
     <Auth.Provider>
-      <Squirdle.Provider>
-        <Router.Provider routes={routes}>
-          <pages.Homescreen />
-        </Router.Provider>
-      </Squirdle.Provider>
+      <MusicProvider>
+        <Squirdle.Provider>
+          <Router.Provider routes={routes}>
+            <pages.Homescreen />
+          </Router.Provider>
+        </Squirdle.Provider>
+      </MusicProvider>
     </Auth.Provider>
   </React.StrictMode>
 );

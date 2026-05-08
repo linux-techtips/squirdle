@@ -8,9 +8,12 @@ import { POKEMON_TYPES, type Pokemon } from "@/types";
 
 import * as React from "react";
 
+import { useMusic } from "@/client/pages/MusicContext";
+
 export default function Pokedex() {
   const router = Router.use();
   const auth = Auth.use();
+  const { setMusicOn } = useMusic();
 
   const pokemonList = pokedex as Pokemon[];
 
@@ -50,6 +53,7 @@ export default function Pokedex() {
         onOpenPokedex={() => router.navigate("/pokedex")}
         onOpenSettings={() => router.navigate("/settings")}
         onLogout={async () => {
+          setMusicOn(false);
           await auth.signOut();
           router.navigate("/signin");
         }}

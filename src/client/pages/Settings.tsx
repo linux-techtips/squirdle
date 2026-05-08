@@ -1,25 +1,20 @@
 import { Navbar } from "@/client/components";
-import { Router } from "@/client";
-import { useEffect, useRef, useState } from "react";
-import bgMusic from "../assets/music/background.mp3";
-import { Auth } from "@/client";
-
+import { Router, Auth } from "@/client";
+import { useMusic } from "@/client/pages/MusicContext";
 
 import * as React from "react";
 
 export default function Settings() {
   const router = Router.use();
   const auth = Auth.use();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const [musicOn, setMusicOn] = React.useState(false);
-  const [volume, setVolume] = React.useState(50);
+  const { musicOn, setMusicOn, volume, setVolume } = useMusic();
 
   const [darkMode, setDarkMode] = React.useState(() => {
     return localStorage.getItem("theme") !== "light";
   });
 
-   React.useEffect(() => {
+  React.useEffect(() => {
     if (!auth.state) {
       router.navigate("/signin");
     }
@@ -39,23 +34,6 @@ export default function Settings() {
     }
   }, [darkMode]);
 
-    useEffect(() => {
-    if (!audioRef.current) return;
-
-    if (musicOn) {
-      audioRef.current.volume = volume / 100;
-      audioRef.current.play();
-    } else {
-      audioRef.current.pause();
-    }
-  }, [musicOn]);
-
-  useEffect(() => {
-    if (!audioRef.current) return;
-
-    audioRef.current.volume = volume / 100;
-  }, [volume]);
-
   return (
     <>
       <Navbar
@@ -64,13 +42,13 @@ export default function Settings() {
         onOpenPokedex={() => router.navigate("/pokedex")}
         onOpenSettings={() => router.navigate("/settings")}
         onLogout={async () => {
+          setMusicOn(false);
           await auth.signOut();
           router.navigate("/signin");
         }}
       />
 
       <main className="page">
-        <audio ref={audioRef} src={bgMusic} loop />
         <section className="card settings-card">
           <h1 className="title">Settings</h1>
 

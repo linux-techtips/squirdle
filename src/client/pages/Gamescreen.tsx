@@ -13,12 +13,15 @@ import xBall from "../assets/Xball.png";
 import upBall from "../assets/upball.png";
 import downBall from "../assets/downball.png";
 
+import { useMusic } from "@/client/pages/MusicContext";
+
 type ResultIcon = "check" | "x" | "up" | "down";
 
 export default function Gamescreen() {
   const router = Router.use();
   const squirdle = Squirdle.use();
   const auth = Auth.use();
+  const { setMusicOn } = useMusic();
 
   React.useEffect(() => {
     if (!auth.state) {
@@ -27,7 +30,7 @@ export default function Gamescreen() {
   }, [auth.state]);
 
   if (!auth.state) return null;
-  
+
   const guesses = squirdle.state?.guesses ?? [];
   const guessesLeft = 8 - guesses.length;
 
@@ -59,6 +62,7 @@ export default function Gamescreen() {
         onOpenPokedex={() => router.navigate("/pokedex")}
         onOpenSettings={() => router.navigate("/settings")}
         onLogout={async () => {
+          setMusicOn(false);
           await auth.signOut();
           router.navigate("/signin");
         }}

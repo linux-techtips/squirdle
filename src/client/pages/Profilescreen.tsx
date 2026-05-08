@@ -2,11 +2,13 @@ import { Navbar } from "@/client/components";
 import { Router } from "@/client";
 import { Auth } from "@/client";
 import * as React from "react";
+import { useMusic } from "@/client/pages/MusicContext";
 
 export default function Profile() {
   const router = Router.use();
   const auth = Auth.use();
-  
+  const { setMusicOn } = useMusic();
+
    React.useEffect(() => {
     if (!auth.state) {
       router.navigate("/signin");
@@ -23,10 +25,12 @@ export default function Profile() {
         onOpenPokedex={() => router.navigate("/pokedex")}
         onOpenSettings={() => router.navigate("/settings")}
         onLogout={async () => {
+          setMusicOn(false);
           await auth.signOut();
           router.navigate("/signin");
         }}
       />
+      
 
       <main className="page">
         <section className="card">
