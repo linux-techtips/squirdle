@@ -8,6 +8,8 @@ import * as React from "react";
 
 import "./style.css";
 
+import { MusicProvider } from "@/client/pages/MusicContext";
+
 export namespace Router {
   type RouteComponent = (props?: any) => React.ReactNode;
   type Routes = Readonly<Record<string, RouteComponent>>;
@@ -58,7 +60,7 @@ export namespace Router {
 
     const Route = routes[state.path];
 
-    if (Route === undefined) window.location.pathname = "/";
+    if (Route === undefined) window.location.pathname = "/signin";
 
     return (
       <Context.Provider value={{ navigate: navigate as NavigateFn<RegisteredRoutes> }}>
@@ -76,7 +78,15 @@ export namespace Router {
   }[keyof RegisteredRoutes & string];
 
   export function Navigate(props: NavigateProps) {
-    use().navigate(props.to as never, (props as { props?: unknown }).props as never);
+    const router = use();
+
+    React.useEffect(() => {
+      router.navigate(
+        props.to as never,
+        (props as { props?: unknown }).props as never
+      );
+    }, []);
+
     return null;
   }
 };
@@ -157,7 +167,7 @@ export namespace Squirdle {
   export type Context = {
     status: Status,
     state: GameState | null,
-    guess(pokemon_id: number): Promise<void>,
+    guess(pokemon_id: number): Promise<string>,
   };
 
   export const Context = React.createContext<Context>(undefined as any);
@@ -190,14 +200,20 @@ export namespace Squirdle {
       return () => controller.abort();
     }, [auth.state]);
 
-    const guess = React.useCallback(async (pokemon_id: number) => {
+    const guess = React.useCallback(async (pokemon_id: number): Promise<string> => {
       const resp = await fetch(`/api/guess/${pokemon_id}`, { method: "POST" });
+      if (!resp.ok) {
+        const { error } = await resp.json() as { error: string };
+        return error;
+      };
       const result: GuessResult = await resp.json();
 
       setState(prev => prev ? {
         guesses: [...prev.guesses ?? [], { mask: result.mask, pokemon_id }],
         remaining: result.remaining,
       } : prev);
+
+      return "";
     }, []);
 
     const status = (() => {
@@ -227,21 +243,25 @@ const routes = {
   "/settings": pages.Settings,
   "/profile": pages.Profilescreen,
   "/pokedex": pages.Pokedex,
+  "/home": pages.Homescreen,
   "/game": pages.Gamescreen,
   "/signup": pages.SignUp,
   "/signin": pages.SignIn,
   "/dev": pages.Dev,
-  "/": pages.Homescreen,
+
+  "/": () => <Router.Navigate to="/signin" />,
 } as const;
 
 const app = (
   <React.StrictMode>
     <Auth.Provider>
-      <Squirdle.Provider>
-        <Router.Provider routes={routes}>
-          <pages.Homescreen />
-        </Router.Provider>
-      </Squirdle.Provider>
+      <MusicProvider>
+        <Squirdle.Provider>
+          <Router.Provider routes={routes}>
+            <pages.Homescreen />
+          </Router.Provider>
+        </Squirdle.Provider>
+      </MusicProvider>
     </Auth.Provider>
   </React.StrictMode>
 );

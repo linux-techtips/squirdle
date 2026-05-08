@@ -46,18 +46,17 @@ function ProfileSearch() {
 function GuessForm() {
   const squirdle = Squirdle.use();
 
-  async function submit(_error: string, body: FormData) {
+  async function submit(_error: string, body: FormData): Promise<string> {
     const pokemon_id = Number(body.get("pokemon_id"));
-    await squirdle.guess(pokemon_id);
-
-    return "";
+    return await squirdle.guess(pokemon_id);
   }
 
-  const [_error, action, pending] = React.useActionState(submit, "");
+  const [error, action, pending] = React.useActionState(submit, "");
 
   return (
     <form action={action}>
       <PokemonInput label="Guess Pokemon" name="pokemon_id" required />
+      {error ? <small style={{ color: "red" }}>{error}</small> : null}
       <button type="submit" disabled={pending || squirdle.status !== "playing"} aria-busy={pending}>Submit</button>
     </form>
   );

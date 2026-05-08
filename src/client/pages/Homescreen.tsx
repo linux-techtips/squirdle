@@ -1,16 +1,35 @@
 import { Navbar } from "@/client/components";
 import { Router } from "@/client";
+import { Auth } from "@/client";
+import * as React from "react";
+
+import { useMusic } from "@/client/pages/MusicContext";
 
 export default function Homescreen() {
   const router = Router.use();
+  const auth = Auth.use();
+  const { setMusicOn } = useMusic();
+
+   React.useEffect(() => {
+    if (!auth.state) {
+      router.navigate("/signin");
+    }
+  }, [auth.state]);
+
+  if (!auth.state) return null;
 
   return (
     <>
       <Navbar
-        onGoHome={() => router.navigate("/")}
+        onGoHome={() => router.navigate("/home")}
         onOpenProfile={() => router.navigate("/profile")}
         onOpenPokedex={() => router.navigate("/pokedex")}
         onOpenSettings={() => router.navigate("/settings")}
+        onLogout={async () => {
+          setMusicOn(false);
+          await auth.signOut();
+          router.navigate("/signin");
+        }}
       />
 
       <main className="page">

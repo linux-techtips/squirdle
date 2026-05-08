@@ -2,13 +2,18 @@ import pokedex from "@/pokedex.json";
 
 import { Navbar, Sprite } from "@/client/components";
 import { Router } from "@/client";
+import { Auth } from "@/client";
 
 import { POKEMON_TYPES, type Pokemon } from "@/types";
 
 import * as React from "react";
 
+import { useMusic } from "@/client/pages/MusicContext";
+
 export default function Pokedex() {
   const router = Router.use();
+  const auth = Auth.use();
+  const { setMusicOn } = useMusic();
 
   const pokemonList = pokedex as Pokemon[];
 
@@ -32,13 +37,26 @@ export default function Pokedex() {
     return matchesName && matchesType && matchesWeight;
   });
 
+     React.useEffect(() => {
+    if (!auth.state) {
+      router.navigate("/signin");
+    }
+  }, [auth.state]);
+
+  if (!auth.state) return null;
+
   return (
     <>
       <Navbar
-        onGoHome={() => router.navigate("/")}
+        onGoHome={() => router.navigate("/home")}
         onOpenProfile={() => router.navigate("/profile")}
         onOpenPokedex={() => router.navigate("/pokedex")}
         onOpenSettings={() => router.navigate("/settings")}
+        onLogout={async () => {
+          setMusicOn(false);
+          await auth.signOut();
+          router.navigate("/signin");
+        }}
       />
 
       <main className="page">

@@ -1,4 +1,12 @@
 @import url("@picocss/pico");
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap");
+
+:root {
+  --retro-blue: #38bdf8;
+  --retro-dark: #020617;
+  --retro-card: #1e293b;
+  --retro-shadow: #000000;
+}
 
 [role=img].poke-sprite {
   flex: 0 0 auto;
@@ -11,12 +19,17 @@
   image-rendering: pixelated;
 }
 
-
 body {
   margin: 0;
   background-color: #0f172a;
   color: #e5e7eb;
-  font-family: Arial, sans-serif;
+  font-family: "VT323", monospace;
+  font-size: 22px;
+
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 /* Navbar */
@@ -26,12 +39,20 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 20px 32px;
-  background-color: #111827;
+  background-color: #020617;
+  border-bottom: 4px solid var(--retro-blue);
+  box-shadow: 0 6px 0 #000;
 }
 
 .navbar-title {
-  font-size: 36px;
+  font-family: "Press Start 2P", cursive;
+  font-size: 28px;
   margin: 0;
+  color: #ffd35c;
+
+  text-shadow:
+    3px 3px 0 #5a1f00,
+    6px 6px 0 #000000;
 }
 
 .navbar-right {
@@ -41,18 +62,27 @@ body {
 
 .nav-btn,
 .primary-btn {
-  background-color: #0284c7;
+  font-family: "Press Start 2P", cursive;
+  background-color: #2563eb;
   color: white;
-  border: none;
-  border-radius: 8px;
+  border: 4px solid #000;
+  border-radius: 0;
   padding: 14px 24px;
-  font-size: 18px;
+  font-size: 14px;
   cursor: pointer;
+  box-shadow: 5px 5px 0 #000;
+  text-shadow: 3px 3px 0 var(--retro-shadow);
 }
 
 .nav-btn:hover,
 .primary-btn:hover {
-  background-color: #0369a1;
+  background-color: #1d4ed8;
+}
+
+.nav-btn:active,
+.primary-btn:active {
+  transform: translate(5px, 5px);
+  box-shadow: none;
 }
 
 /* Page layout */
@@ -69,11 +99,12 @@ body {
 .card {
   width: 100%;
   max-width: 900px;
-  background-color: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 16px;
+  background-color: var(--retro-card);
+  border: 4px solid var(--retro-blue);
+  border-radius: 0;
   padding: 32px;
   text-align: center;
+  box-shadow: 8px 8px 0 #000;
 }
 
 .hero-card {
@@ -83,12 +114,17 @@ body {
 }
 
 .title {
-  font-size: 48px;
+  font-family: "Press Start 2P", cursive;
+  font-size: 36px;
   margin: 0 0 12px;
+  color: #ffffff;
+  letter-spacing: 1px;
+  text-shadow: 3px 3px 0 var(--retro-shadow);
 }
 
 .subtitle {
-  font-size: 22px;
+  font-size: 26px;
+  text-shadow: 2px 2px 0 #000;
 }
 
 .button-row {
@@ -103,6 +139,8 @@ body {
   max-width: 100%;
   height: auto;
   margin: 20px 0;
+  image-rendering: pixelated;
+  filter: drop-shadow(4px 4px 0 #000);
 }
 
 /* Guess screen */
@@ -116,20 +154,52 @@ body {
 
 .guess-bar input {
   padding: 12px;
-  border-radius: 8px;
-  font-size: 18px;
+  border-radius: 0;
+  font-size: 24px;
+  background-color: #020617;
+  color: white;
+  border: 4px solid var(--retro-blue);
+  box-shadow: 5px 5px 0 #000;
+  font-family: "VT323", monospace;
 }
 
 .guess-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: 160px repeat(5, 1fr);
+  align-items: center;
   gap: 12px;
   padding: 12px;
-  border-bottom: 1px solid #334155;
+  border-bottom: 3px solid #334155;
+  text-shadow: 2px 2px 0 #000;
 }
 
 .guess-header {
+  font-family: "Press Start 2P", cursive;
+  font-size: 12px;
   font-weight: bold;
+  color: #facc15;
+}
+
+.pokeball-result {
+  width: 55px;
+  height: 55px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(4px 4px 0 #000);
+}
+
+.pokemon-guess-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.guess-row img {
+  width: 55px;
+  height: 55px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(4px 4px 0 #000);
 }
 
 /* Pokédex */
@@ -145,8 +215,13 @@ body {
 .pokedex-filters input,
 .pokedex-filters select {
   padding: 10px;
-  border-radius: 8px;
-  font-size: 16px;
+  border-radius: 0;
+  font-size: 24px;
+  background-color: #020617;
+  color: white;
+  border: 4px solid var(--retro-blue);
+  box-shadow: 5px 5px 0 #000;
+  font-family: "VT323", monospace;
 }
 
 .pokemon-grid {
@@ -157,9 +232,9 @@ body {
 }
 
 .pokemon-card {
-  background-color: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 16px;
+  background-color: var(--retro-card);
+  border: 4px solid var(--retro-blue);
+  border-radius: 0;
   padding: 20px;
   text-align: center;
   display: flex;
@@ -168,15 +243,19 @@ body {
 }
 
 .pokemon-card h2 {
-  font-size: 28px;
+  font-family: "Press Start 2P", cursive;
+  font-size: 20px;
   margin: 8px 0;
   text-transform: capitalize;
+  text-shadow: 3px 3px 0 #000;
 }
 
 .pokemon-card p {
-  font-size: 18px;
+  font-size: 24px;
+  text-shadow: 2px 2px 0 #000;
 }
 
+/* Settings */
 
 .settings-card {
   display: flex;
@@ -190,13 +269,26 @@ body {
   align-items: center;
   gap: 24px;
   padding: 20px;
-  border: 1px solid #334155;
-  border-radius: 14px;
+  border: 4px solid var(--retro-blue);
+  border-radius: 0;
+  background-color: var(--retro-card);
+  box-shadow: 6px 6px 0 #000;
 }
 
 .setting-row h3,
 .setting-row p {
   margin: 0;
+}
+
+.setting-row h3 {
+  font-family: "Press Start 2P", cursive;
+  font-size: 16px;
+  text-shadow: 3px 3px 0 #000;
+}
+
+.setting-row p {
+  font-size: 22px;
+  text-shadow: 2px 2px 0 #000;
 }
 
 .setting-row input[type="checkbox"] {
@@ -208,6 +300,7 @@ body {
 }
 
 /* Bootstrap-style switch */
+
 .switch {
   position: relative;
   display: inline-block;
@@ -228,15 +321,17 @@ body {
   background-color: #6b7280;
   border-radius: 999px;
   transition: 0.3s;
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0 #000;
 }
 
 .slider::before {
   position: absolute;
   content: "";
-  height: 24px;
-  width: 24px;
+  height: 20px;
+  width: 20px;
   left: 4px;
-  bottom: 4px;
+  bottom: 3px;
   background-color: white;
   border-radius: 50%;
   transition: 0.3s;
@@ -251,14 +346,233 @@ body {
 }
 
 /* Theme preview */
+
 .dark-mode {
   background-color: #0f172a;
   color: #e5e7eb;
 }
 
+/* Light mode - retro warm palette */
+
 .light-mode {
-  background-color: #f8fafc;
-  color: #111827;
+  background-color: #eee7a3;
+  color: #2b1a12;
+}
+
+.light-mode body {
+  background-color: #eee7a3;
+  color: #2b1a12;
+}
+
+.light-mode .navbar {
+  background-color: #cf3d09;
+  color: #fff3c4;
+  border-bottom: 4px solid #6b2d12;
+}
+
+.light-mode .navbar-title {
+  color: #ffd35c;
+    text-shadow:
+    3px 3px 0 #5a1f00,
+    6px 6px 0 #000000;
+}
+
+.light-mode .card,
+.light-mode .pokemon-card,
+.light-mode .setting-row {
+  background-color: #b8d19f;
+  color: #2b1a12;
+  border: 4px solid #54aaa3;
+  box-shadow: 8px 8px 0 #6b2d12;
+}
+
+.light-mode .primary-btn,
+.light-mode .nav-btn {
+  background-color: #ff842b;
+  color: #2b1a12;
+  border: 4px solid #6b2d12;
+  box-shadow: 5px 5px 0 #6b2d12;
+}
+
+.light-mode .primary-btn:hover,
+.light-mode .nav-btn:hover {
+  background-color: #f0cc62;
+}
+
+.light-mode input,
+.light-mode select,
+.light-mode .guess-bar input,
+.light-mode .pokedex-filters input,
+.light-mode .pokedex-filters select {
+  background-color: #fff3c4;
+  color: #2b1a12;
+  border: 4px solid #54aaa3;
+  box-shadow: 5px 5px 0 #6b2d12;
+}
+
+.light-mode .guess-header {
+  color: #cf3d09;
+}
+
+.light-mode .subtitle,
+.light-mode .pokemon-card p,
+.light-mode .setting-row p,
+.light-mode .guess-row {
+  text-shadow: none;
+}
+
+/* Light mode readability fixes */
+
+.light-mode {
+  color: #2b1a12;
+}
+
+.light-mode .title {
+  color: #2b1a12;
+  text-shadow: 3px 3px 0 #f0cc62;
+}
+
+.light-mode .pokemon-card h2 {
+  color: #2b1a12;
+  text-shadow: 2px 2px 0 #eee7a3;
+}
+
+.light-mode .pokemon-card p {
+  color: #3b2a1f;
+  text-shadow: none;
+  font-weight: bold;
+}
+
+.light-mode .pokemon-card {
+  background-color: #b8d19f;
+  border: 4px solid #54aaa3;
+  box-shadow: 6px 6px 0 #6b2d12;
+}
+
+/* Make navbar buttons cleaner in light mode */
+
+.light-mode .nav-btn,
+.light-mode .primary-btn {
+  color: #2b1a12;
+  background-color: #ff842b;
+  border: 4px solid #6b2d12;
+  box-shadow: 4px 4px 0 #6b2d12;
+  text-shadow: none;
+}
+
+.light-mode .nav-btn:hover,
+.light-mode .primary-btn:hover {
+  background-color: #f0cc62;
+}
+
+.light-mode .nav-btn:active,
+.light-mode .primary-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+
+/* Fix input placeholder visibility */
+
+.light-mode input::placeholder {
+  color: #7c6f89;
+  opacity: 1;
+}
+
+/* Fix select text */
+
+.light-mode select {
+  color: #2b1a12;
+}
+
+/* Reduce card text glow in light mode */
+
+.light-mode .subtitle,
+.light-mode .guess-row,
+.light-mode .setting-row p {
+  color: #2b1a12;
+  text-shadow: none;
+}
+
+/* Light mode text readability fixes */
+
+.light-mode .card,
+.light-mode .hero-card,
+.light-mode .settings-card,
+.light-mode .pokemon-card {
+  color: #2b1a12;
+}
+
+.light-mode .title,
+.light-mode h1,
+.light-mode h2,
+.light-mode h3 {
+  color: #2b1a12;
+  text-shadow: 3px 3px 0 #f0cc62;
+}
+
+.light-mode .subtitle,
+.light-mode p,
+.light-mode span,
+.light-mode .card p,
+.light-mode .card span {
+  color: #2b1a12;
+  text-shadow: none;
+}
+
+.light-mode .card h2 {
+  color: #2b1a12;
+  text-shadow: 3px 3px 0 #f0cc62;
+}
+
+/* Specifically fixes Today's Summary text */
+.light-mode .card .subtitle,
+.light-mode .card p {
+  color: #2b1a12;
+  font-weight: bold;
+}
+
+/* Keeps retro pixel font */
+.light-mode .title,
+.light-mode h1,
+.light-mode h2,
+.light-mode .navbar-title,
+.light-mode .primary-btn,
+.light-mode .nav-btn {
+  font-family: "Press Start 2P", cursive;
+}
+
+/* Keep pixel/retro look in both modes */
+
+.light-mode,
+.dark-mode {
+  font-family: "VT323", monospace;
+}
+
+.light-mode .navbar-title,
+.light-mode .title,
+.light-mode .card h2,
+.light-mode .primary-btn,
+.light-mode .nav-btn,
+.light-mode .guess-header,
+.light-mode .pokemon-card h2 {
+  font-family: "Press Start 2P", cursive;
+}
+
+.light-mode .poke-sprite,
+.light-mode .pokemon-sprite,
+.light-mode .guess-row img,
+.light-mode img {
+  image-rendering: pixelated;
+}
+
+.light-mode .card,
+.light-mode .pokemon-card,
+.light-mode .setting-row,
+.light-mode .nav-btn,
+.light-mode .primary-btn,
+.light-mode input,
+.light-mode select {
+  border-radius: 0;
 }
 
 .light-mode .card {
