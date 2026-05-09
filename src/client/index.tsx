@@ -152,7 +152,7 @@ export namespace Auth {
     const context: Context = {
       isSignedIn: () => state !== null,
       async signOut() {
-        await window.cookieStore.delete("primary-token");
+        await window.cookieStore?.delete("primary-token");
         setState(null);
       },
       async deleteUrself() {
