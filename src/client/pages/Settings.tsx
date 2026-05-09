@@ -11,7 +11,7 @@ export default function Settings() {
   const { musicOn, setMusicOn, volume, setVolume } = useMusic();
 
   const [darkMode, setDarkMode] = React.useState(() => {
-    return localStorage.getItem("theme") !== "light";
+    return localStorage.getItem("theme") === "dark";
   });
 
   React.useEffect(() => {
@@ -20,7 +20,7 @@ export default function Settings() {
     }
   }, [auth.state]);
 
-  if (!auth.state) return null;
+  
 
   React.useEffect(() => {
     if (darkMode) {
@@ -33,6 +33,8 @@ export default function Settings() {
       localStorage.setItem("theme", "light");
     }
   }, [darkMode]);
+
+  if (!auth.state) return null;
 
   return (
     <>
@@ -56,6 +58,8 @@ export default function Settings() {
             <div>
               <h3>Background Music</h3>
               <p>Turn game music on or off.</p>
+              <p>Pokémon Original Series - Theme Song</p>
+              <p>A Lofi Lia Remix</p>
             </div>
 
             <label className="toggle-switch">
