@@ -63,6 +63,7 @@ export default function PokemonInput({ label, name, required }: { label: string,
           type="hidden"
           name={name}
           value={valid ? selected!.id : ""}
+          spellCheck="false"
         />
 
         {open && (
