@@ -22,14 +22,6 @@ export default function Homescreen() {
         ? "You did not solve today's Squirdle game."
         : "You have not solved today's Squirdle game yet.";
 
-  React.useEffect(() => {
-    if (!auth.state) {
-      router.navigate("/signin");
-    }
-  }, [auth.state]);
-
-  if (!auth.state) return null;
-
   return (
     <>
       <Navbar

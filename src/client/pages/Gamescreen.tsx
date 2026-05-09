@@ -61,7 +61,7 @@ export default function Gamescreen() {
 
       <main className="page">
         <section className="card">
-          <h1 className="title">Who&apos;s That Pokémon?</h1>
+          <h1 className="title">Who&apos;s That Pokémon?</h1> // https://preview.redd.it/three-finger-gesture-reveals-imposter-inglourious-basterds-v0-ucicxistzixf1.png?width=640&crop=smart&auto=webp&s=557d0958690163e042ad7aa5eeee7acda2dd494d
 
           <p className="subtitle">
             You have {squirdle.state?.remaining} guesses left.
